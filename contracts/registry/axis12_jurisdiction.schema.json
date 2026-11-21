@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/registry/axis12_jurisdiction.schema.json",
+  "title": "Axis 12 jurisdiction: ISO 3166 place plus separate legal nexus",
+  "type": "object",
+  "properties": {
+    "jurisdiction_id": {
+      "type": "string",
+      "pattern": "^\\[JUR:12\\.[1-9][0-9]*\\]$"
+    },
+    "state": {
+      "enum": [
+        "specified",
+        "unknown",
+        "unscoped"
+      ]
+    },
+    "place": {
+      "type": "object",
+      "properties": {
+        "iso_3166_1": {
+          "type": "string",
+          "pattern": "^[A-Z]{2}$"
+        },
+        "iso_3166_2": {
+          "type": "string",
+          "pattern": "^[A-Z]{2}-[A-Z0-9]{1,3}$"
+        },
+        "locality": {
+          "type": "string",
+          "minLength": 1
+        },
+        "site": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "iso_3166_1"
+      ],
+      "additionalProperties": false
+    },
+    "legal_nexus": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "enum": [
+              "federal_agency",
+              "state_agency",
+              "local_government",
+              "tribal_government",
+              "contract",
+              "buyer",
+              "site_owner",
+              "foreign_authority"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "identifier": {
+            "type": "string"
+          },
+          "basis": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Why this nexus applies (statute, contract clause, location)"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "evidence_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "source": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "locator": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "evidence_id",
+                "source",
+                "locator"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "kind",
+          "name",
+          "basis"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "status": {
+      "enum": [
+        "proposed",
+        "verified",
+        "retired",
+        "fixture"
+      ]
+    },
+    "valid_from": {
+      "type": "string",
+      "format": "date"
+    },
+    "valid_to": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "jurisdiction_id",
+    "state",
+    "status"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "specified"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "place",
+          "legal_nexus"
+        ],
+        "properties": {
+          "legal_nexus": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "enum": [
+              "unknown",
+              "unscoped"
+            ]
+          }
+        }
+      },
+      "then": {
+        "not": {
+          "required": [
+            "place"
+          ]
+        }
+      }
+    }
+  ]
+}

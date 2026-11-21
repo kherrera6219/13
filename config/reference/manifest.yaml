@@ -1,0 +1,25 @@
+# Reference lists used to validate persona profile fields (DLE-SPC-004 §5).
+# Not vendored. Fetch at build time, pin by sha256, record the edition in the registry manifest.
+version: 1.0.0
+sources:
+  - id: cip2020
+    title: Classification of Instructional Programs 2020
+    publisher: U.S. Department of Education, NCES
+    url: https://nces.ed.gov/ipeds/cipcode/
+    used_for: [education]
+    file: cip2020.csv
+    sha256: null
+  - id: cip2020_soc2018
+    title: CIP 2020 to SOC 2018 crosswalk
+    publisher: NCES and BLS
+    url: https://nces.ed.gov/ipeds/cipcode/Files/CIP2020_SOC2018_Crosswalk.xlsx
+    used_for: [job_role, related_jobs, career_path]
+    file: cip2020_soc2018.xlsx
+    sha256: null
+  - id: onet_soc
+    title: O*NET-SOC taxonomy and crosswalk files
+    publisher: O*NET Resource Center, U.S. Department of Labor
+    url: https://www.onetcenter.org/crosswalks.html
+    used_for: [job_role, related_jobs, skills, job_training]
+    file: onet_soc_taxonomy.csv
+    sha256: null

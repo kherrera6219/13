@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/registry/axis3_link.schema.json",
+  "title": "Axis 3 Honeycomb link: a typed, evidence-backed lateral relation",
+  "type": "object",
+  "properties": {
+    "link_id": {
+      "type": "string",
+      "pattern": "^\\[LINK:3\\.[1-9][0-9]*\\]$"
+    },
+    "subject": {
+      "type": "string",
+      "pattern": "^\\[[A-Z][A-Z0-9-]*:(?:1[0-3]|[1-9])(?:\\.(?:0|[1-9][0-9]*))+\\]$",
+      "description": "Canonical permanent atom, e.g. [PL:1.27.0.0]"
+    },
+    "predicate": {
+      "enum": [
+        "requires",
+        "supplies",
+        "depends_on",
+        "constrains",
+        "uses_method_of",
+        "is_analogous_to",
+        "applies_to",
+        "part_of"
+      ]
+    },
+    "object": {
+      "type": "string",
+      "pattern": "^\\[[A-Z][A-Z0-9-]*:(?:1[0-3]|[1-9])(?:\\.(?:0|[1-9][0-9]*))+\\]$",
+      "description": "Canonical permanent atom, e.g. [PL:1.27.0.0]"
+    },
+    "scope": {
+      "type": "string",
+      "minLength": 1
+    },
+    "cost": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Traversal cost in the distance d = dtree + w3*hops + w67*cost"
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "evidence_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Authority or document title"
+          },
+          "locator": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Section, clause, page or URL fragment"
+          },
+          "edition": {
+            "type": "string"
+          },
+          "passage_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "required": [
+          "evidence_id",
+          "source",
+          "locator"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "status": {
+      "enum": [
+        "proposed",
+        "verified",
+        "retired",
+        "fixture"
+      ],
+      "description": "Only verified records may support a binding claim. proposed: discovery only. fixture: tests only, never loaded in production."
+    },
+    "owner": {
+      "type": "string",
+      "minLength": 1
+    },
+    "valid_from": {
+      "type": "string",
+      "format": "date"
+    },
+    "valid_to": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "jurisdiction": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^\\[[A-Z][A-Z0-9-]*:(?:1[0-3]|[1-9])(?:\\.(?:0|[1-9][0-9]*))+\\]$",
+          "description": "Canonical permanent atom, e.g. [PL:1.27.0.0]"
+        },
+        {
+          "enum": [
+            "unscoped",
+            "unknown"
+          ]
+        }
+      ]
+    },
+    "note": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "link_id",
+    "subject",
+    "predicate",
+    "object",
+    "scope",
+    "cost",
+    "evidence",
+    "status",
+    "owner",
+    "valid_from"
+  ],
+  "additionalProperties": false
+}

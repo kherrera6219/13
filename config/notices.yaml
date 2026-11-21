@@ -1,0 +1,48 @@
+# User-visible notice templates (G10). Wording follows the style guide (documentation set §14):
+# say what happened, then what would resolve it. Placeholders in {braces}. Text is part of the hashed response.
+schema_version: 1.0.0
+notices:
+  - id: NOTICE-HOLD-01
+    when: open_blocking_objection
+    badge: Held for review
+    text: "Held: {objection_predicate} is not shown in the supplied records. Provide {required_evidence} or route to {authority} for review."
+  - id: NOTICE-HOLD-02
+    when: binding_claim_unverified
+    badge: Held for review
+    text: "Held: the authority for \"{claim_summary}\" could not be verified. The governing text was {retrieval_status}."
+  - id: NOTICE-HOLD-03
+    when: empty_claim_set
+    badge: Held for review
+    text: "Held: no checkable statements could be formed from the available evidence for this question."
+  - id: NOTICE-HOLD-04
+    when: score_at_or_above_cutoff_strict
+    badge: Held for review
+    text: "Held: the answer's support did not meet the verification threshold. Weakest point: {weakest_claim_summary}."
+  - id: NOTICE-HOLD-05
+    when: drift_latched_strict
+    badge: Held for review
+    text: "Held: verification is paused while the system is recalibrated. An administrator has been alerted."
+  - id: NOTICE-HOLD-06
+    when: model_unavailable
+    badge: Held for review
+    text: "Held: the language model did not respond. Try again shortly."
+  - id: NOTICE-HOLD-07
+    when: internal_error
+    badge: Held for review
+    text: "Held: an internal check failed, so no answer was released. Reference {receipt_id}."
+  - id: NOTICE-ADV-01
+    when: score_at_or_above_cutoff_advisory
+    badge: Advisory
+    text: "Advisory: not fully verified. {flagged_count} statement(s) have weak support and are marked."
+  - id: NOTICE-ADV-02
+    when: drift_latched_advisory
+    badge: Advisory
+    text: "Advisory: verification is being recalibrated; this answer is not certified."
+  - id: NOTICE-REL-01
+    when: released
+    badge: Verified
+    text: "Verified against {source_count} source(s)."
+  - id: NOTICE-TOOL-01
+    when: function_call_pending
+    badge: Tool call
+    text: "Waiting for your app to run {function_name}."

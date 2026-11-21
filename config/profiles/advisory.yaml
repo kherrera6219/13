@@ -1,0 +1,21 @@
+# Release profile: advisory (model dle-13axis-advisory). Answers failing the cutoff return as released_advisory with a notice.
+schema_version: 1.0.0
+name: advisory
+release: { below_cutoff: released, at_or_above_cutoff: released_advisory, drift_latched: released_advisory } # emits NOTICE-ADV-02 and receipt release_mode=annotated_release_drift_warning
+alpha: 0.05
+policy_functions:
+  DVSS-P01: on
+  DVSS-P02: on
+  DVSS-P03: on
+  DVSS-P04: on
+  DVSS-P05: off
+  DVSS-P06: on
+  DVSS-P07: on
+  DVSS-P08: on
+  DVSS-P09: on         # hypotheses only; never cited as evidence
+  DVSS-P10: on
+  DVSS-P11: tier3
+  DVSS-P12: on
+  DVSS-P13: on
+  DVSS-P14: off
+blinded_assurance_roles: false

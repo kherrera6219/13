@@ -1,0 +1,116 @@
+# HANDOFF.md
+
+Running record for agents. Newest entry first. Keep each entry short: what changed, what was learned, what is next.
+
+## 2026-11-20 — local Git repository setup for GitHub
+
+**State.** Local Git repository initialized on `main` at flattened root `C:\software\13\dle-middleware`; no remote configured yet. All 54 unit tests pass.
+
+**Changed.**
+- Flattened `dle-middleware/dle-middleware/` into `C:\software\13\dle-middleware/` so `pyproject.toml`, `.github/`, `AGENTS.md`, `dle/`, and `tests/` live at the repository root.
+- Copied v3.13 white paper PDF and editable source into `docs/whitepaper/` (originals kept in `C:\software\13\`) and updated `docs/INDEX.md`.
+- Added `.gitattributes` (LF text + binary markers) and `.python-version` (`3.12`).
+- Updated `pyproject.toml` with Hatchling build metadata, `pytest-cov`, and a Windows environment marker on `mutmut`; raised `.pre-commit-config.yaml` large-file ceiling to `2500` KB for the doc set PDF.
+- Updated `.github/workflows/ci.yml` (`setup-uv@v4`, native `uvx semgrep`, gated `dle.tools`, `tests/gemini_compat`, `ui/`, and `mutmut` steps until their Phase 1 tickets land).
+- Removed unused `import pytest` in `tests/unit/registry/test_contracts_and_config.py`.
+
+**Learned.**
+- `returntocorp/semgrep-action` is deprecated and `mutmut` 3.2+ requires POSIX `fork`/`resource` (non-Windows).
+
+**Next.** Design the multi-phase build plan and execute Phase 1 (`P1-01`), optionally creating/pushing the GitHub remote when ready.
+
+## 2026-11-20 — spec, contract, and fixture reconciliation
+
+**State.** All contracts, schemas, SQLite DDL, configs, fixtures, and Markdown docs reconciled against white paper v3.13. Still pre-Phase-1 runtime code (`dle/temporal/` and `0001_init.sql` present; 54 unit tests passing).
+
+**Changed.**
+- Fixed `tests/fixtures/coordinate_warehouse.json` to match the white paper §04b warehouse case and preserved the previous energy-storage coordinate as `tests/fixtures/coordinate_storage_procurement.json`.
+- Reconciled `contracts/receipt.schema.json` 3.8.0 (`decision.profile` allows all 4 profiles; `decision.release_mode` includes `cancelled`), `dle/store/migrations/0001_init.sql` (`receipts.release_mode` allows `'cancelled'`), `config/profiles/advisory.yaml` (`drift_latched: released_advisory`), and `docs/specs/function_specs.md` (canonical `DVSS-K11` release-mode mapping table).
+- Added `distance_weights: { w3: 1.0, w67: 1.0 }` to `config/tiers.yaml` for DLE-SPC-003 §5.
+- Aligned `docs/eval/study_protocol.md` H1–H4 with white paper §17 and separated middleware endpoints M1–M2.
+- Verified and populated `axis1_pillars.csv` ISCED-F codes for `PL109` (`0413; 0417`) and `PL114` (`0314`).
+- Synced `DLE_Application_Blueprint.md`, `DLE_Software_Development_Documentation_Set.md`, `docs/backlog/phase1_backlog.md` (added `P1-20` details), `README.md`, `docs/INDEX.md`, `naming_and_numbering_conventions.md`, and `docs/traceability/rtm.csv`.
+- Added `tests/unit/registry/test_contracts_and_config.py` (`T-UNIT-REG-23..28`).
+
+**Learned.**
+- Mapping between internal DVSS receipt modes (`gate_passed`, `annotated_release_ka39`, etc.), API `X-DLE-Release-Mode` (`released`, `released_advisory`, `held`, `passthrough`), and `cancelled` now has one authoritative table in `DVSS-K11`.
+- Remaining pre-implementation open items: D1 (delivery format), D3 (local ONNX vs Gemini embeddings + SHA-256 pins in `model_pins.yaml`), D4 (pilot domain/corpus to seed Axes 3–7, 12, 13), and fetching `config/reference/manifest.yaml` reference files; also `uv` is not installed on PATH (`python -m pytest` works on Python 3.13).
+
+**Next.** Produce the multi-phase build plan and start Phase 1 (`P1-01`).
+
+## 2026-11-20 — scaffold and specs
+
+**State.** No runtime code yet. Contracts, configuration skeletons, specs and plans exist for phases 1–7.
+
+**Changed.**
+- `contracts/openapi.yaml` (IR-01–IR-07), `contracts/receipt.schema.json` 3.8.0 with `function_invocations`, `contracts/role_artifact.schema.json`, `contracts/prompts/claim_extraction.schema.json`.
+- `config/functions.yaml` with all 26 DVSS bindings; `config/profiles/` (strict, advisory, kernel_only, kernel_plus_policy); `config/tiers.yaml`; `config/notices.yaml`.
+- `dle/store/migrations/0001_init.sql` for the five SQLite stores.
+- Specs, plans, guides and policies listed in `README.md`.
+
+**Learned.**
+- Gemini 4 Carbon (`gemini-4-carbon`) list price doubles on 2026-12-01: $4 input and $20 output per million tokens, cached input $0.20. Cost metering reads prices from `config/model_pins.yaml`; do not hard-code them. See `docs/vendor/gemini_4_carbon_verification.md`.
+- The paper fully specifies intake scoring (S = D + R + M, B, Z). The open choice is only how D, R and M are scored; see `docs/specs/intake_scoring.md`.
+
+**Next.** Phase 1, ticket P1-01 in `docs/backlog/phase1_backlog.md`. Open decisions D1 (delivery format) and D3 (embedding model) should be settled before P1-10.
+
+## Active phase
+
+Phase 1 · Gemini pass-through. Exit gate: official Python and JS SDKs run text, streaming, multi-turn and function calling against the middleware exactly as against Google.
+
+## 2026-11-20 — Axis 1 pillar register
+
+- Added `config/registry/axis1_pillars.csv` (DLE-REG-001): 118 IDs = 78 active, 36 proposed, 4 aliases.
+- Only top-level pillars are registered. Members are generated dynamically at query time to any depth; `seed_members` are examples, not a closed list. Do not build a fixed member table.
+- Aliases: PL081→PL005, PL082→PL004, PL084→PL006, PL101→PL020. Alias IDs stay reserved; never reuse or renumber.
+- Proposed rows (PL051–PL075, PL108–PL118) and rescope notes (PL002, PL007, PL018, PL022, PL107) need owner approval before status changes to `active`.
+- ISCED-F / FORD / CIP codes marked `verify` must be checked against the official code lists before release.
+- Loader rule: resolve any `alias` row to `canonical_id` before routing; reject unknown IDs.
+
+## 2026-11-20 — Axis 1 register approved
+
+- Owner approved all 36 new pillars and the 5 rescopes. All 114 non-alias rows are now `status=active`.
+- Renamed: PL002 → "Science (General) and Scientific Method", PL007 → "Anthropology". Scope boundaries for PL002, PL007, PL018, PL022, PL107 are in each row's `note`.
+- Field codes checked against ISCED-F 2013, Frascati 2015 and CIP 2020. Two remain marked `verify`: PL109 ISCED-F 0413 and PL114 ISCED-F 0314.
+- White paper v3.9 Appendix A matches this file.
+
+## 2026-11-20 — Axis 2 sector register (approved)
+
+- `config/registry/axis2_sectors.csv` (DLE-REG-002): 20 sectors SC01–SC20 = the 20 NAICS 2022 sectors, in workbook order (coordinates 2.1–2.20 unchanged). Seed subsectors are NAICS 2022 three-digit codes; deeper codes resolve at query time against the pinned NAICS edition.
+- `config/registry/axis2_crosswalk.csv`: all 336 workbook and worldwide rows, each with `resolution`:
+  - `resolvable` (85): NAICS codes that still exist in 2022. Only these may anchor a claim.
+  - `crosswalk only` (73): 9 NAICS 2017 codes retired in 2022 (successor given), 44 SIC 1987 major groups, 20 ISIC rows. Translate a source code to a sector; never anchor.
+  - `excluded` (178): PSC rows (invalid mapping), NIC (India), NACE, GICS (licensed), HS and UNSPSC (product schemes).
+- The CSV files are the source of truth; the xlsx is a reading copy. Edit the CSV, never the xlsx.
+- NAICS 2027 is in OMB review (Federal Register 2026-07-13). When final, add it as a new edition with its own valid time; do not overwrite 2022.
+
+- Owner approved the Axis 2 register and crosswalk, including the PSC and NIC exclusions.
+- `tests/unit/registry/test_axis_registries.py` checks both registries (IDs, aliases, coordinates, resolution values, NAICS successors). Run it after any registry edit.
+
+## 2026-11-20 — Axes 3–7 formats (DLE-SPC-003)
+
+- Read `docs/specs/axes_3_to_7.md` before touching retrieval, the resolver or role activation.
+- Decisions: Axis 1 stops at the pillar (pillar atoms always `[PL:1.<p>.0.0]`); drill-down is Axis 4, dynamic, depth ≤ 7, generated as TMP nodes until promoted; Axis 5 = record or intersection; Axis 6 = concept hub with editioned arms; Axis 7 = typed relations among requirements; Axis 3 = evidence-backed typed link. Roles: binding claim → Axis 10; active Axis 7 entry → Axis 11. No degree or density thresholds.
+- Schemas: `contracts/registry/axis{3,4,5,6,7}_*.schema.json`. Production registries `config/registry/axis{3..7}_*.jsonl` are intentionally empty until decision D4 picks a pilot domain. The loader must reject `status: fixture` outside tests.
+- Fixtures: `tests/fixtures/registry/` (warehouse substitution case). Tests: `tests/unit/registry/test_axes_3_to_7.py` (T-UNIT-REG-09..15).
+- White paper is now v3.11 (§03 "How Axes 3–7 divide the work").
+
+## 2026-11-20 — Axes 8–12 (DLE-SPC-004)
+
+- Read `docs/specs/axes_8_to_12.md` before touching persona building, prompts or jurisdiction.
+- Profiles have exactly the MDKF seven fields (job_role, education, certifications, skills, job_training, career_path, related_jobs). Traits, guardrails, vetoes and synthesis weights live in `config/personas/conduct.yaml`, never in a profile.
+- Build per question: Scholar ← Axes 1+4, Practitioner ← Axis 2, Regulator ← Axis 6 hub arms + Axis 12, Harmonizer ← Axis 7 meshes + Axis 12. Resolve Axis 12 first. Every field item carries `derived_from` within the profile's inputs.
+- Validate codes against CIP 2020, CIP2020–SOC2018 and O*NET (`config/reference/manifest.yaml`; files are fetched at build, not vendored). Without them a profile cannot support certified release.
+- Replace `PersonaBuilder`'s static profile dictionaries in the legacy product reference with this builder; do not port them.
+- No human names or post-nominals in profiles or output.
+- Axis 12 = ISO 3166 place + legal-nexus list; state specified / unknown / unscoped. Old Axis 12 forms are input aliases only.
+- Tests: `tests/unit/registry/test_axes_8_to_12.py` (T-UNIT-REG-16..22). White paper is now v3.12.
+
+## 2026-11-20 — Axis 13 valid time (DLE-SPC-005)
+
+- All 13 axes now have record formats. Read `docs/specs/axis_13_valid_time.md` before writing any date logic.
+- Use `dle.temporal` (`contains`, `overlaps`, `inclusive_to_exclusive`, `parse_legacy`, `interval_of`, `project`). Never hand-write interval comparisons.
+- Half-open `[start, end)`, `end: null` = open. Convert inclusive source dates once on ingest; keep `source_text`. Legacy forms (`13.YYYY.Q`, quarter pairs, ISO date intervals, the v3.0 shape, 9999 sentinels) convert on ingest only.
+- Date granularity needs an IANA `time_zone` (default from the Axis 12 place); instants are UTC `Z`. The 3.7.1 coordinate holds dates only; `project()` refuses instants unless widening is explicit.
+- Unknown valid time is recorded as unknown and opens a dependency on a binding claim; it is never projected.
+- Tests: `tests/unit/temporal/test_axis13_intervals.py` (T-UNIT-TMP-01..10). `ruff` and `mypy` are clean on `dle/temporal`. White paper is now v3.13.

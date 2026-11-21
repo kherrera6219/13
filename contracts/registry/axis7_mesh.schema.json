@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/registry/axis7_mesh.schema.json",
+  "title": "Axis 7 Spiderweb mesh: typed overlaps, conflicts and dependencies among requirements",
+  "type": "object",
+  "properties": {
+    "mesh_id": {
+      "type": "string",
+      "pattern": "^\\[MESH:7\\.[1-9][0-9]*\\]$"
+    },
+    "label": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requirements": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^(?:\\[HUB:6\\.[1-9][0-9]*\\]#[a-z0-9-]+|CITE:.+)$",
+        "description": "A hub arm ([HUB:6.n]#arm-id) or a direct citation (CITE:<authority> <citation>)"
+      },
+      "minItems": 2,
+      "uniqueItems": true
+    },
+    "relations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string",
+            "pattern": "^(?:\\[HUB:6\\.[1-9][0-9]*\\]#[a-z0-9-]+|CITE:.+)$",
+            "description": "A hub arm ([HUB:6.n]#arm-id) or a direct citation (CITE:<authority> <citation>)"
+          },
+          "b": {
+            "type": "string",
+            "pattern": "^(?:\\[HUB:6\\.[1-9][0-9]*\\]#[a-z0-9-]+|CITE:.+)$",
+            "description": "A hub arm ([HUB:6.n]#arm-id) or a direct citation (CITE:<authority> <citation>)"
+          },
+          "type": {
+            "enum": [
+              "equivalent",
+              "overlaps",
+              "conflicts",
+              "depends_on",
+              "stricter_than"
+            ]
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "evidence_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "source": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Authority or document title"
+                },
+                "locator": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Section, clause, page or URL fragment"
+                },
+                "edition": {
+                  "type": "string"
+                },
+                "passage_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              },
+              "required": [
+                "evidence_id",
+                "source",
+                "locator"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1
+          },
+          "resolution_note": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "a",
+          "b",
+          "type",
+          "evidence"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "status": {
+      "enum": [
+        "proposed",
+        "verified",
+        "retired",
+        "fixture"
+      ],
+      "description": "Only verified records may support a binding claim. proposed: discovery only. fixture: tests only, never loaded in production."
+    },
+    "owner": {
+      "type": "string",
+      "minLength": 1
+    },
+    "valid_from": {
+      "type": "string",
+      "format": "date"
+    },
+    "valid_to": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "jurisdiction": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^\\[[A-Z][A-Z0-9-]*:(?:1[0-3]|[1-9])(?:\\.(?:0|[1-9][0-9]*))+\\]$",
+          "description": "Canonical permanent atom, e.g. [PL:1.27.0.0]"
+        },
+        {
+          "enum": [
+            "unscoped",
+            "unknown"
+          ]
+        }
+      ]
+    },
+    "note": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "mesh_id",
+    "label",
+    "requirements",
+    "relations",
+    "status",
+    "owner",
+    "valid_from"
+  ],
+  "additionalProperties": false
+}

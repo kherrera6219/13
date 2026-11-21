@@ -1,0 +1,4 @@
+# Ablation arm B (paper §17, FR-FN-09): identical to strict; kept as a separate file so the study pins its own copy.
+schema_version: 1.0.0
+name: kernel_plus_policy
+extends: strict

@@ -1,0 +1,11 @@
+# Owners must approve changes to these paths. Replace handles when roles are assigned.
+*                               @kherrera6219
+/contracts/                     @kherrera6219
+/config/profiles/               @kherrera6219
+/config/tiers.yaml              @kherrera6219
+/config/model_pins.yaml         @kherrera6219
+/config/functions.yaml          @kherrera6219
+/dle/host/services/release*     @kherrera6219
+/dle/host/functions/kernel/     @kherrera6219
+/tests/fixtures/                @kherrera6219
+/SECURITY.md                    @kherrera6219

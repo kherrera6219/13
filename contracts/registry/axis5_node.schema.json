@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/registry/axis5_node.schema.json",
+  "title": "Axis 5 Crossroads: a permanent record or intersection node",
+  "type": "object",
+  "properties": {
+    "node_id": {
+      "type": "string",
+      "pattern": "^\\[NODE:5\\.[1-9][0-9]*\\]$"
+    },
+    "kind": {
+      "enum": [
+        "record",
+        "intersection"
+      ]
+    },
+    "label": {
+      "type": "string",
+      "minLength": 1
+    },
+    "anchors": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^\\[[A-Z][A-Z0-9-]*:(?:1[0-3]|[1-9])(?:\\.(?:0|[1-9][0-9]*))+\\]$",
+        "description": "Canonical permanent atom, e.g. [PL:1.27.0.0]"
+      },
+      "minItems": 1,
+      "description": "Pillar, sector and branch atoms the node sits under"
+    },
+    "via_links": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^\\[LINK:3\\.[1-9][0-9]*\\]$"
+      },
+      "description": "Required for intersections: the Axis 3 links that meet here"
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "evidence_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Authority or document title"
+          },
+          "locator": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Section, clause, page or URL fragment"
+          },
+          "edition": {
+            "type": "string"
+          },
+          "passage_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "required": [
+          "evidence_id",
+          "source",
+          "locator"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "status": {
+      "enum": [
+        "proposed",
+        "verified",
+        "retired",
+        "fixture"
+      ],
+      "description": "Only verified records may support a binding claim. proposed: discovery only. fixture: tests only, never loaded in production."
+    },
+    "owner": {
+      "type": "string",
+      "minLength": 1
+    },
+    "valid_from": {
+      "type": "string",
+      "format": "date"
+    },
+    "valid_to": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "jurisdiction": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^\\[[A-Z][A-Z0-9-]*:(?:1[0-3]|[1-9])(?:\\.(?:0|[1-9][0-9]*))+\\]$",
+          "description": "Canonical permanent atom, e.g. [PL:1.27.0.0]"
+        },
+        {
+          "enum": [
+            "unscoped",
+            "unknown"
+          ]
+        }
+      ]
+    },
+    "note": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "node_id",
+    "kind",
+    "label",
+    "anchors",
+    "status",
+    "owner",
+    "valid_from"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "intersection"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "via_links"
+        ],
+        "properties": {
+          "via_links": {
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ]
+}

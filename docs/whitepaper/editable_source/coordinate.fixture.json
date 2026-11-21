@@ -1,0 +1,48 @@
+{
+  "axis_1_pillars": [
+    {
+      "axis_id": 1,
+      "meta_tag": "PL",
+      "nuremberg_path": [
+        23,
+        0,
+        0
+      ],
+      "canonical_str": "[PL:1.23.0.0]"
+    }
+  ],
+  "axis_2_sectors": [],
+  "axis_3_honeycomb": [],
+  "axis_4_branches": [],
+  "axis_5_nodes": [],
+  "axis_6_octopus": [],
+  "axis_7_spiderweb": [],
+  "axis_8_scholar": [],
+  "axis_9_practitioner": [],
+  "axis_10_regulator": [],
+  "axis_11_compliance": [],
+  "axis_12_jurisdiction": [],
+  "axis_13_temporal": [
+    {
+      "claim_scope": "procurement",
+      "effective_start": "2027-01-01",
+      "effective_end": "2028-01-01",
+      "as_of": "2027-01-01"
+    }
+  ],
+  "schema_version": "3.7.1",
+  "registry_manifest_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "jurisdiction_state": "unscoped",
+  "slot_states": {
+    "axis_2_sectors": "unknown",
+    "axis_3_honeycomb": "not_applicable",
+    "axis_4_branches": "not_applicable",
+    "axis_5_nodes": "not_applicable",
+    "axis_6_octopus": "not_applicable",
+    "axis_7_spiderweb": "not_applicable",
+    "axis_8_scholar": "empty",
+    "axis_9_practitioner": "not_applicable",
+    "axis_10_regulator": "not_applicable",
+    "axis_11_compliance": "not_applicable"
+  }
+}

@@ -1,0 +1,546 @@
+openapi: 3.1.0
+info:
+  title: DataLogicEngine 13-Axis Middleware API
+  version: "1.0.0"
+  summary: Gemini-compatible façade plus DLE receipt, source and admin endpoints.
+  description: |
+    Implements interface requirements IR-01 to IR-07 (DLE-ICD). Request and response bodies for
+    the Gemini routes follow the Gemini API v1beta shapes. Fields not modelled here are passed
+    through unchanged (additionalProperties: true), so new Gemini fields do not break clients.
+
+    Governed models: `dle-13axis-strict`, `dle-13axis-advisory`. Any other model name is passed
+    through to Gemini with `X-DLE-Release-Mode: passthrough`.
+
+    A held answer is a 200 response with `finishReason: STOP`, the hold notice as text, and
+    `X-DLE-Release-Mode: held` (ADR-007).
+  license:
+    name: Proprietary
+servers:
+  - url: http://127.0.0.1:8740
+    description: Default loopback bind (NFR-SEC-01)
+security:
+  - apiKeyHeader: []
+  - apiKeyQuery: []
+tags:
+  - name: gemini
+    description: Gemini-compatible routes (IR-01 to IR-04)
+  - name: dle
+    description: Receipts and sources (IR-05, IR-06)
+  - name: admin
+    description: Administration, loopback only (IR-07)
+  - name: health
+paths:
+  /v1beta/models:
+    get:
+      tags: [gemini]
+      operationId: listModels
+      summary: List models (IR-01)
+      parameters:
+        - in: query
+          name: pageSize
+          schema: { type: integer, minimum: 1, maximum: 1000 }
+        - in: query
+          name: pageToken
+          schema: { type: string }
+      responses:
+        "200":
+          description: Gemini model list plus the two DLE virtual models.
+          headers:
+            X-DLE-API-Version: { $ref: "#/components/headers/ApiVersion" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ListModelsResponse" }
+        default: { $ref: "#/components/responses/Error" }
+  /v1beta/models/{model}:
+    get:
+      tags: [gemini]
+      operationId: getModel
+      summary: Get one model
+      parameters:
+        - $ref: "#/components/parameters/Model"
+      responses:
+        "200":
+          description: Model description.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Model" }
+        default: { $ref: "#/components/responses/Error" }
+  /v1beta/models/{model}:generateContent:
+    post:
+      tags: [gemini]
+      operationId: generateContent
+      summary: Generate content (IR-02)
+      description: Governed run for DLE models; pass-through for other models.
+      parameters:
+        - $ref: "#/components/parameters/Model"
+        - $ref: "#/components/parameters/DleSession"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GenerateContentRequest" }
+      responses:
+        "200":
+          description: Released, advisory, held, tool-call or pass-through response.
+          headers:
+            X-DLE-Release-Mode: { $ref: "#/components/headers/ReleaseMode" }
+            X-DLE-Receipt: { $ref: "#/components/headers/Receipt" }
+            X-DLE-Tier: { $ref: "#/components/headers/Tier" }
+            X-DLE-API-Version: { $ref: "#/components/headers/ApiVersion" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GenerateContentResponse" }
+        default: { $ref: "#/components/responses/Error" }
+  /v1beta/models/{model}:streamGenerateContent:
+    post:
+      tags: [gemini]
+      operationId: streamGenerateContent
+      summary: Stream generated content (IR-03)
+      description: |
+        With `alt=sse`, returns Server-Sent Events. For governed models the gate runs first;
+        SSE comment lines (`: keepalive`) are sent at least every 10 s (NFR-PERF-02), then the
+        released text is sent as GenerateContentResponse chunks (ADR-004). Headers are sent with
+        the first byte, so `X-DLE-Receipt` is also repeated in the final chunk's
+        `dleMetadata.receiptId`.
+      parameters:
+        - $ref: "#/components/parameters/Model"
+        - $ref: "#/components/parameters/DleSession"
+        - in: query
+          name: alt
+          schema: { type: string, enum: [sse, json] }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GenerateContentRequest" }
+      responses:
+        "200":
+          description: Event stream of GenerateContentResponse chunks.
+          headers:
+            X-DLE-Tier: { $ref: "#/components/headers/Tier" }
+            X-DLE-API-Version: { $ref: "#/components/headers/ApiVersion" }
+          content:
+            text/event-stream:
+              schema: { type: string }
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/GenerateContentResponse" }
+        default: { $ref: "#/components/responses/Error" }
+  /v1beta/models/{model}:countTokens:
+    post:
+      tags: [gemini]
+      operationId: countTokens
+      summary: Count tokens (IR-04); forwarded to Gemini
+      parameters:
+        - $ref: "#/components/parameters/Model"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              properties:
+                contents:
+                  type: array
+                  items: { $ref: "#/components/schemas/Content" }
+                generateContentRequest: { $ref: "#/components/schemas/GenerateContentRequest" }
+      responses:
+        "200":
+          description: Token count.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                properties:
+                  totalTokens: { type: integer }
+        default: { $ref: "#/components/responses/Error" }
+  /v1/receipts/{receiptId}:
+    get:
+      tags: [dle]
+      operationId: getReceipt
+      summary: Fetch a signed receipt (IR-05)
+      parameters:
+        - in: path
+          name: receiptId
+          required: true
+          schema: { type: string, pattern: "^[0-9a-f-]{36}$" }
+      responses:
+        "200":
+          description: Receipt as defined by contracts/receipt.schema.json (3.8.0), with anchor proof.
+          content:
+            application/json:
+              schema: { $ref: "./receipt.schema.json" }
+        "404": { $ref: "#/components/responses/Error" }
+        default: { $ref: "#/components/responses/Error" }
+  /v1/sources:
+    get:
+      tags: [dle]
+      operationId: listSources
+      summary: Registered evidence sources (IR-06)
+      parameters:
+        - in: query
+          name: pageToken
+          schema: { type: string }
+      responses:
+        "200":
+          description: Sources with authority class and current revision.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sources:
+                    type: array
+                    items: { $ref: "#/components/schemas/Source" }
+                  nextPageToken: { type: string }
+        default: { $ref: "#/components/responses/Error" }
+  /admin/sources:
+    post:
+      tags: [admin]
+      operationId: registerSource
+      summary: Register a source (US-12)
+      security: [{ adminKey: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SourceRegistration" }
+      responses:
+        "201":
+          description: Registered.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Source" }
+        default: { $ref: "#/components/responses/Error" }
+  /admin/drift/reset:
+    post:
+      tags: [admin]
+      operationId: resetDriftLatch
+      summary: Reset the drift latch after loading an approved calibration artifact (US-13)
+      security: [{ adminKey: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [calibrationArtifactId, confirm]
+              properties:
+                calibrationArtifactId: { type: string }
+                confirm: { type: string, const: "RESET" }
+      responses:
+        "204": { description: Latch reset and logged with admin identity. }
+        default: { $ref: "#/components/responses/Error" }
+  /admin/keys/rotate:
+    post:
+      tags: [admin]
+      operationId: rotateSigningKey
+      summary: Rotate the Ed25519 signing key
+      security: [{ adminKey: [] }]
+      responses:
+        "200":
+          description: New key ID; old public key stays published.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  keyId: { type: string }
+                  validFrom: { type: string, format: date-time }
+        default: { $ref: "#/components/responses/Error" }
+  /admin/receipts/export:
+    post:
+      tags: [admin]
+      operationId: exportReceipts
+      summary: Export a signed receipt bundle for a date range (US-11)
+      security: [{ adminKey: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [from, to]
+              properties:
+                from: { type: string, format: date-time }
+                to: { type: string, format: date-time }
+      responses:
+        "200":
+          description: Bundle with per-receipt Merkle proofs.
+          content:
+            application/zip:
+              schema: { type: string, contentEncoding: base64 }
+        default: { $ref: "#/components/responses/Error" }
+  /healthz:
+    get:
+      tags: [health]
+      operationId: health
+      summary: Health and drift latch state
+      security: []
+      responses:
+        "200":
+          description: Health report.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Health" }
+components:
+  securitySchemes:
+    apiKeyHeader: { type: apiKey, in: header, name: x-goog-api-key }
+    apiKeyQuery: { type: apiKey, in: query, name: key }
+    adminKey: { type: apiKey, in: header, name: X-DLE-Admin-Key }
+  parameters:
+    Model:
+      in: path
+      name: model
+      required: true
+      description: Model ID without the `models/` prefix, e.g. `dle-13axis-strict` or `gemini-4-carbon`.
+      schema: { type: string }
+    DleSession:
+      in: header
+      name: X-DLE-Session
+      required: false
+      description: Overrides the history-hash session ID (FR-SES-02).
+      schema: { type: string, maxLength: 128 }
+  headers:
+    ReleaseMode:
+      description: Outcome of the release rule.
+      schema: { type: string, enum: [released, released_advisory, held, passthrough] }
+    Receipt:
+      description: Receipt ID; fetch with GET /v1/receipts/{receiptId}.
+      schema: { type: string }
+    Tier:
+      description: Tier used after any escalation.
+      schema: { type: string, enum: ["1", "2", "3"] }
+    ApiVersion:
+      schema: { type: string, const: "1.0" }
+  responses:
+    Error:
+      description: Gemini-style error.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+  schemas:
+    ListModelsResponse:
+      type: object
+      properties:
+        models:
+          type: array
+          items: { $ref: "#/components/schemas/Model" }
+        nextPageToken: { type: string }
+    Model:
+      type: object
+      additionalProperties: true
+      properties:
+        name: { type: string, examples: ["models/dle-13axis-strict"] }
+        displayName: { type: string }
+        description: { type: string }
+        inputTokenLimit: { type: integer }
+        outputTokenLimit: { type: integer }
+        supportedGenerationMethods:
+          type: array
+          items: { type: string }
+    GenerateContentRequest:
+      type: object
+      additionalProperties: true
+      required: [contents]
+      properties:
+        contents:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/Content" }
+        systemInstruction: { $ref: "#/components/schemas/Content" }
+        tools:
+          type: array
+          description: Passed to Gemini unchanged (FR-TOOL-01).
+          items: { $ref: "#/components/schemas/Tool" }
+        toolConfig: { type: object, additionalProperties: true }
+        generationConfig: { type: object, additionalProperties: true }
+        safetySettings:
+          type: array
+          items: { type: object, additionalProperties: true }
+        cachedContent: { type: string }
+    Content:
+      type: object
+      additionalProperties: true
+      properties:
+        role: { type: string, enum: [user, model, function] }
+        parts:
+          type: array
+          items: { $ref: "#/components/schemas/Part" }
+    Part:
+      type: object
+      additionalProperties: true
+      description: Exactly one data field is set, as in the Gemini API.
+      properties:
+        text: { type: string }
+        thought: { type: boolean }
+        inlineData:
+          type: object
+          properties:
+            mimeType: { type: string }
+            data: { type: string, contentEncoding: base64 }
+        fileData:
+          type: object
+          properties:
+            mimeType: { type: string }
+            fileUri: { type: string }
+        functionCall: { $ref: "#/components/schemas/FunctionCall" }
+        functionResponse: { $ref: "#/components/schemas/FunctionResponse" }
+    FunctionCall:
+      type: object
+      additionalProperties: true
+      required: [name]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        args: { type: object, additionalProperties: true }
+    FunctionResponse:
+      type: object
+      additionalProperties: true
+      required: [name, response]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        response: { type: object, additionalProperties: true }
+    Tool:
+      type: object
+      additionalProperties: true
+      properties:
+        functionDeclarations:
+          type: array
+          items: { type: object, additionalProperties: true }
+        googleSearch: { type: object, additionalProperties: true }
+        codeExecution: { type: object, additionalProperties: true }
+        urlContext: { type: object, additionalProperties: true }
+    GenerateContentResponse:
+      type: object
+      additionalProperties: true
+      properties:
+        candidates:
+          type: array
+          items: { $ref: "#/components/schemas/Candidate" }
+        usageMetadata: { $ref: "#/components/schemas/UsageMetadata" }
+        modelVersion:
+          type: string
+          description: Actual Gemini model version used by the governed run's writer.
+        responseId: { type: string }
+        dleMetadata: { $ref: "#/components/schemas/DleMetadata" }
+    Candidate:
+      type: object
+      additionalProperties: true
+      properties:
+        content: { $ref: "#/components/schemas/Content" }
+        finishReason:
+          type: string
+          description: STOP for released, advisory and held answers (ADR-007).
+        index: { type: integer }
+        groundingMetadata: { $ref: "#/components/schemas/GroundingMetadata" }
+        safetyRatings:
+          type: array
+          items: { type: object, additionalProperties: true }
+    GroundingMetadata:
+      type: object
+      additionalProperties: true
+      description: Claim-to-passage links (FR-API-04).
+      properties:
+        groundingChunks:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+            properties:
+              retrievedContext:
+                type: object
+                additionalProperties: true
+                properties:
+                  uri: { type: string, description: "dle://source/{sourceId}@{revision}#{locator}" }
+                  title: { type: string }
+                  text: { type: string }
+        groundingSupports:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+            properties:
+              segment:
+                type: object
+                properties:
+                  startIndex: { type: integer }
+                  endIndex: { type: integer }
+                  text: { type: string }
+              groundingChunkIndices:
+                type: array
+                items: { type: integer }
+              confidenceScores:
+                type: array
+                description: Entailment-weighted support z for the claim, per chunk.
+                items: { type: number, minimum: 0, maximum: 1 }
+    UsageMetadata:
+      type: object
+      additionalProperties: true
+      properties:
+        promptTokenCount: { type: integer }
+        candidatesTokenCount: { type: integer }
+        totalTokenCount: { type: integer }
+        thoughtsTokenCount: { type: integer }
+    DleMetadata:
+      type: object
+      description: Optional DLE extension in the body; mirrors the X-DLE headers for streaming clients.
+      properties:
+        releaseMode: { type: string, enum: [released, released_advisory, held, passthrough] }
+        receiptId: { type: string }
+        tier: { type: integer, minimum: 1, maximum: 3 }
+        holdReason: { type: string }
+    Source:
+      type: object
+      properties:
+        sourceId: { type: string }
+        title: { type: string }
+        authorityClass:
+          type: string
+          enum: [primary_text, binding_instrument, peer_reviewed, industry_practice, unhydrated_synthesis, app_tool, google_builtin_tool]
+        revision: { type: string }
+        validFrom: { type: string, format: date }
+        validTo: { type: [string, "null"], format: date }
+        retainable: { type: boolean }
+    SourceRegistration:
+      type: object
+      required: [title, authorityClass, content]
+      properties:
+        title: { type: string }
+        authorityClass: { $ref: "#/components/schemas/Source/properties/authorityClass" }
+        jurisdiction: { type: string }
+        validFrom: { type: string, format: date }
+        validTo: { type: [string, "null"], format: date }
+        retainable: { type: boolean, default: true }
+        content:
+          type: object
+          properties:
+            mimeType: { type: string }
+            data: { type: string, contentEncoding: base64 }
+    Health:
+      type: object
+      properties:
+        status: { type: string, enum: [ok, degraded, down] }
+        bind: { type: string }
+        modelReachable: { type: boolean }
+        nliLoaded: { type: boolean }
+        driftLatch: { type: string, enum: [clear, tripped] }
+        kernelFunctions: { type: integer, description: "Registered kernel functions; must be 12" }
+        version: { type: string }
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, status]
+          properties:
+            code: { type: integer }
+            message: { type: string }
+            status:
+              type: string
+              enum: [INVALID_ARGUMENT, UNAUTHENTICATED, PERMISSION_DENIED, NOT_FOUND, RESOURCE_EXHAUSTED, INTERNAL, UNAVAILABLE]

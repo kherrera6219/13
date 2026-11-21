@@ -1,0 +1,18 @@
+# Model pins per job and dated prices (NFR-COST-01). Any pin change latches calibration (FR-REL-04).
+# Prices verified 2026-11-20; see docs/vendor/gemini_4_carbon_verification.md.
+schema_version: 1.0.0
+jobs:
+  intake: gemini-4-carbon        # ADR-008 may move this to a cheaper model
+  personas: gemini-4-carbon
+  writer: gemini-4-carbon
+  claim_extraction: gemini-4-carbon
+prices_usd_per_million_tokens:
+  gemini-4-carbon:
+    - { from: 2026-11-10, to: 2026-12-01, input: 2.00, output: 10.00, cached_input: 0.10 }
+    - { from: 2026-12-01, to: null, input: 4.00, output: 20.00, cached_input: 0.20 }
+  gemini-4-argon:
+    - { from: 2026-10-01, to: 2026-12-01, input: 2.00, output: 10.00, cached_input: 0.10 }
+    - { from: 2026-12-01, to: null, input: 4.00, output: 20.00, cached_input: 0.20 }
+local_models:
+  nli: { id: deberta-v3-nli-onnx, sha256: TBD }
+  embeddings: { id: TBD-local-onnx, sha256: TBD }   # decision D3

@@ -1,0 +1,7 @@
+# Receipt settings (FR-RCPT-01–03).
+schema_version: 1.0.0
+anchoring_profile: local_worm_merkle      # local_worm_merkle | customer_hosted_log | external_transparency_log
+merkle_checkpoint_every: 100              # receipts per checkpoint
+retention_years: 7
+signature: ed25519
+canonicalization: jcs_rfc8785

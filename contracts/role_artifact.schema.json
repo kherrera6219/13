@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/role_artifact.schema.json",
+  "title": "RoleArtifact_1_0_0",
+  "description": "Output of one Quad Persona role call (paper §09, FR-QP-07). Objection fields match receipt.schema.json.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["profile_id", "role_axis", "proposal_id", "claims", "assumptions", "disconfirming_observations", "objections"],
+  "properties": {
+    "profile_id": { "type": "string", "minLength": 1 },
+    "role_axis": { "type": "integer", "minimum": 8, "maximum": 11 },
+    "proposal_id": { "type": "string", "minLength": 1 },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["claim_id", "assertion", "binding", "scope", "passage_ids"],
+        "properties": {
+          "claim_id": { "type": "string", "minLength": 1 },
+          "assertion": { "type": "string", "minLength": 1 },
+          "binding": { "type": "boolean" },
+          "scope": { "type": "string", "minLength": 1 },
+          "passage_ids": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+          "falsifier": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "assumptions": { "type": "array", "items": { "type": "string" } },
+    "disconfirming_observations": { "type": "array", "items": { "type": "string" } },
+    "objections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["objection_id", "role_axis", "proposal_id", "blocking", "predicate", "state", "closure_evidence"],
+        "properties": {
+          "objection_id": { "type": "string", "minLength": 1 },
+          "role_axis": { "type": "integer", "minimum": 8, "maximum": 11 },
+          "proposal_id": { "type": "string", "minLength": 1 },
+          "blocking": { "type": "boolean" },
+          "predicate": { "type": "string", "minLength": 1 },
+          "state": { "enum": ["open", "proposed_closed"] },
+          "closure_evidence": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+        }
+      }
+    }
+  }
+}

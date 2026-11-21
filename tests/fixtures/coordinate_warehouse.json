@@ -1,0 +1,181 @@
+{
+  "axis_1_pillars": [
+    {
+      "axis_id": 1,
+      "meta_tag": "PL",
+      "nuremberg_path": [
+        27,
+        0,
+        0
+      ],
+      "canonical_str": "[PL:1.27.0.0]"
+    },
+    {
+      "axis_id": 1,
+      "meta_tag": "PL",
+      "nuremberg_path": [
+        28,
+        0,
+        0
+      ],
+      "canonical_str": "[PL:1.28.0.0]"
+    }
+  ],
+  "axis_2_sectors": [
+    {
+      "axis_id": 2,
+      "meta_tag": "SECTOR",
+      "nuremberg_path": [
+        8,
+        0,
+        0
+      ],
+      "canonical_str": "[SECTOR:2.8.0.0]"
+    }
+  ],
+  "axis_3_honeycomb": [
+    {
+      "axis_id": 3,
+      "meta_tag": "LINK",
+      "nuremberg_path": [
+        17
+      ],
+      "canonical_str": "[LINK:3.17]"
+    }
+  ],
+  "axis_4_branches": [
+    {
+      "axis_id": 4,
+      "meta_tag": "BR",
+      "nuremberg_path": [
+        1,
+        27,
+        1,
+        1
+      ],
+      "canonical_str": "[BR:4.1.27.1.1]"
+    },
+    {
+      "axis_id": 4,
+      "meta_tag": "BR",
+      "nuremberg_path": [
+        2,
+        8,
+        493,
+        4931
+      ],
+      "canonical_str": "[BR:4.2.8.493.4931]"
+    }
+  ],
+  "axis_5_nodes": [
+    {
+      "axis_id": 5,
+      "meta_tag": "NODE",
+      "nuremberg_path": [
+        41
+      ],
+      "canonical_str": "[NODE:5.41]"
+    },
+    {
+      "axis_id": 5,
+      "meta_tag": "NODE",
+      "nuremberg_path": [
+        42
+      ],
+      "canonical_str": "[NODE:5.42]"
+    }
+  ],
+  "axis_6_octopus": [
+    {
+      "axis_id": 6,
+      "meta_tag": "HUB",
+      "nuremberg_path": [
+        7
+      ],
+      "canonical_str": "[HUB:6.7]"
+    }
+  ],
+  "axis_7_spiderweb": [
+    {
+      "axis_id": 7,
+      "meta_tag": "MESH",
+      "nuremberg_path": [
+        9
+      ],
+      "canonical_str": "[MESH:7.9]"
+    }
+  ],
+  "axis_8_scholar": [
+    {
+      "axis_id": 8,
+      "meta_tag": "ROLE",
+      "nuremberg_path": [
+        2
+      ],
+      "canonical_str": "[ROLE:8.2]"
+    }
+  ],
+  "axis_9_practitioner": [
+    {
+      "axis_id": 9,
+      "meta_tag": "ROLE",
+      "nuremberg_path": [
+        4
+      ],
+      "canonical_str": "[ROLE:9.4]"
+    }
+  ],
+  "axis_10_regulator": [
+    {
+      "axis_id": 10,
+      "meta_tag": "ROLE",
+      "nuremberg_path": [
+        3
+      ],
+      "canonical_str": "[ROLE:10.3]"
+    }
+  ],
+  "axis_11_compliance": [
+    {
+      "axis_id": 11,
+      "meta_tag": "ROLE",
+      "nuremberg_path": [
+        5
+      ],
+      "canonical_str": "[ROLE:11.5]"
+    }
+  ],
+  "axis_12_jurisdiction": [
+    {
+      "axis_id": 12,
+      "meta_tag": "JUR",
+      "nuremberg_path": [
+        1
+      ],
+      "canonical_str": "[JUR:12.1]"
+    }
+  ],
+  "axis_13_temporal": [
+    {
+      "claim_scope": "change-control schedule (renewal term)",
+      "effective_start": "2026-01-01",
+      "effective_end": "2027-01-01",
+      "as_of": "2026-06-01"
+    }
+  ],
+  "schema_version": "3.7.1",
+  "registry_manifest_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "jurisdiction_state": "specified",
+  "slot_states": {
+    "axis_2_sectors": "specified",
+    "axis_3_honeycomb": "specified",
+    "axis_4_branches": "specified",
+    "axis_5_nodes": "specified",
+    "axis_6_octopus": "specified",
+    "axis_7_spiderweb": "specified",
+    "axis_8_scholar": "specified",
+    "axis_9_practitioner": "specified",
+    "axis_10_regulator": "specified",
+    "axis_11_compliance": "specified"
+  }
+}

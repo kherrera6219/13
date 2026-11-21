@@ -1,0 +1,675 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AnchoredReceipt_DVSS_3_7_1",
+  "type": "object",
+  "properties": {
+    "payload": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "3.7.1"
+        },
+        "run_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "utc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "chain_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "previous_hash": {
+          "type": "string",
+          "pattern": "^(GENESIS|[0-9a-f]{64})$"
+        },
+        "coordinate_manifest_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "policy_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "verifier_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "attempts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "attempt_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "parent_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "event": {
+                "enum": [
+                  "initial",
+                  "tier_escalation",
+                  "retry"
+                ]
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              },
+              "tier": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 3
+              },
+              "hops": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 4
+              },
+              "ppr_iterations": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 80
+              },
+              "vertices_retained": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 250
+              },
+              "graph_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "source_manifest_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "role_calls": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "role_axes": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "minimum": 8,
+                        "maximum": 11
+                      },
+                      "minItems": 1,
+                      "uniqueItems": true
+                    },
+                    "profile_ids": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "minItems": 1
+                    },
+                    "input_sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    "output_sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    "model_id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "model_version": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "temperature": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 2
+                    },
+                    "top_p": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "seed": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "role_axes",
+                    "profile_ids",
+                    "input_sha256",
+                    "output_sha256",
+                    "model_id",
+                    "model_version",
+                    "temperature",
+                    "top_p",
+                    "seed"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "claims": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "claim_id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "proposal_id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "assertion": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "binding": {
+                      "type": "boolean"
+                    },
+                    "scope": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "passage_ids": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "uniqueItems": true
+                    },
+                    "entailment": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "provenance": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "belief": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    }
+                  },
+                  "required": [
+                    "claim_id",
+                    "proposal_id",
+                    "assertion",
+                    "binding",
+                    "scope",
+                    "passage_ids",
+                    "entailment",
+                    "provenance",
+                    "belief"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "objections": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "objection_id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "role_axis": {
+                      "type": "integer",
+                      "minimum": 8,
+                      "maximum": 11
+                    },
+                    "proposal_id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "blocking": {
+                      "type": "boolean"
+                    },
+                    "predicate": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "state": {
+                      "enum": [
+                        "open",
+                        "closed"
+                      ]
+                    },
+                    "closure_evidence": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "uniqueItems": true
+                    }
+                  },
+                  "required": [
+                    "objection_id",
+                    "role_axis",
+                    "proposal_id",
+                    "blocking",
+                    "predicate",
+                    "state",
+                    "closure_evidence"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "candidate_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            },
+            "required": [
+              "attempt_id",
+              "parent_id",
+              "event",
+              "reason",
+              "tier",
+              "hops",
+              "ppr_iterations",
+              "vertices_retained",
+              "graph_sha256",
+              "source_manifest_sha256",
+              "role_calls",
+              "claims",
+              "objections",
+              "candidate_sha256"
+            ],
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "tier": {
+                      "minimum": 2
+                    },
+                    "claims": {
+                      "contains": {
+                        "properties": {
+                          "binding": {
+                            "const": true
+                          }
+                        },
+                        "required": [
+                          "binding"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "tier",
+                    "claims"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "role_calls": {
+                      "contains": {
+                        "properties": {
+                          "role_axes": {
+                            "contains": {
+                              "const": 10
+                            }
+                          }
+                        },
+                        "required": [
+                          "role_axes"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 4
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "source_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "revision": {
+                "type": "string",
+                "minLength": 1
+              },
+              "document_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "passage_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "locator": {
+                "type": "string",
+                "minLength": 1
+              },
+              "passage_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "scope": {
+                "type": "string",
+                "minLength": 1
+              },
+              "access_policy": {
+                "type": "string",
+                "minLength": 1
+              },
+              "retrieved_utc": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "source_id",
+              "revision",
+              "document_sha256",
+              "passage_id",
+              "locator",
+              "passage_sha256",
+              "scope",
+              "access_policy",
+              "retrieved_utc"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "calibration": {
+          "type": "object",
+          "properties": {
+            "artifact_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "artifact_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "n_cal": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "alpha": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "exclusiveMaximum": 1
+            },
+            "threshold": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "mu_0": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "drift_lambda": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "drift_delta": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "required": [
+            "artifact_id",
+            "artifact_sha256",
+            "n_cal",
+            "alpha",
+            "threshold",
+            "mu_0",
+            "drift_lambda",
+            "drift_delta"
+          ],
+          "additionalProperties": false
+        },
+        "decision": {
+          "type": "object",
+          "properties": {
+            "hard_gate": {
+              "type": "boolean"
+            },
+            "drift_latched": {
+              "type": "boolean"
+            },
+            "cusum": {
+              "type": "number",
+              "minimum": 0
+            },
+            "terminal_u": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "terminal_attempt_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "release_mode": {
+              "enum": [
+                "gate_passed",
+                "annotated_release_drift_warning",
+                "annotated_release_ka39",
+                "hard_veto_block",
+                "review_required",
+                "abstained"
+              ]
+            },
+            "profile": {
+              "enum": [
+                "strict",
+                "advisory"
+              ]
+            }
+          },
+          "required": [
+            "hard_gate",
+            "drift_latched",
+            "cusum",
+            "terminal_u",
+            "terminal_attempt_id",
+            "release_mode",
+            "profile"
+          ],
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "release_mode": {
+                    "const": "gate_passed"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "hard_gate": {
+                    "const": true
+                  },
+                  "drift_latched": {
+                    "const": false
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "response_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "schema_version",
+        "run_id",
+        "utc",
+        "chain_id",
+        "previous_hash",
+        "coordinate_manifest_sha256",
+        "policy_sha256",
+        "verifier_version",
+        "attempts",
+        "sources",
+        "calibration",
+        "decision",
+        "response_sha256"
+      ],
+      "additionalProperties": false
+    },
+    "envelope": {
+      "type": "object",
+      "properties": {
+        "digest_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "key_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "algorithm": {
+          "const": "Ed25519"
+        },
+        "signature_b64": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9+/]{86}==$"
+        },
+        "log_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Identity of the external log, customer log, or local Merkle tree, per anchoring_profile."
+        },
+        "inclusion_proof_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "verified_checkpoint_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "anchoring_profile": {
+          "enum": [
+            "external_transparency_log",
+            "customer_hosted_log",
+            "local_worm_merkle"
+          ]
+        },
+        "verification_level": {
+          "enum": [
+            "externally_anchored",
+            "customer_anchored",
+            "locally_sealed"
+          ]
+        }
+      },
+      "required": [
+        "digest_sha256",
+        "key_id",
+        "algorithm",
+        "signature_b64",
+        "log_id",
+        "inclusion_proof_ref",
+        "verified_checkpoint_sha256",
+        "anchoring_profile",
+        "verification_level"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "anchoring_profile": {
+                "const": "external_transparency_log"
+              }
+            },
+            "required": [
+              "anchoring_profile"
+            ]
+          },
+          "then": {
+            "properties": {
+              "verification_level": {
+                "const": "externally_anchored"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "anchoring_profile": {
+                "const": "customer_hosted_log"
+              }
+            },
+            "required": [
+              "anchoring_profile"
+            ]
+          },
+          "then": {
+            "properties": {
+              "verification_level": {
+                "const": "customer_anchored"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "anchoring_profile": {
+                "const": "local_worm_merkle"
+              }
+            },
+            "required": [
+              "anchoring_profile"
+            ]
+          },
+          "then": {
+            "properties": {
+              "verification_level": {
+                "const": "locally_sealed"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "required": [
+    "payload",
+    "envelope"
+  ],
+  "additionalProperties": false
+}

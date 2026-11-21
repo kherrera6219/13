@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/prompts/claim_extraction.schema.json",
+  "title": "ClaimExtraction_1_0_0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["proposal_id", "claims"],
+  "properties": {
+    "proposal_id": { "type": "string", "minLength": 1 },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["assertion", "binding", "hedged", "source", "span_start", "span_end", "scope"],
+        "properties": {
+          "assertion": { "type": "string", "minLength": 1, "maxLength": 600 },
+          "binding": { "type": "boolean" },
+          "hedged": { "type": "boolean" },
+          "source": { "enum": ["draft", "artifact"] },
+          "artifact_ref": { "type": ["string", "null"] },
+          "span_start": { "type": "integer", "minimum": 0 },
+          "span_end": { "type": "integer", "minimum": 0 },
+          "scope": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "entity": { "type": ["string", "null"] },
+              "quantity": { "type": ["number", "null"] },
+              "units": { "type": ["string", "null"] },
+              "interval_start": { "type": ["string", "null"], "format": "date" },
+              "interval_end": { "type": ["string", "null"], "format": "date" },
+              "jurisdiction": { "type": ["string", "null"] },
+              "site": { "type": ["string", "null"] }
+            }
+          }
+        }
+      }
+    }
+  }
+}

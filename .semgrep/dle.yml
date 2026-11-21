@@ -1,0 +1,35 @@
+rules:
+  - id: dle-egress-only-through-client
+    message: Outbound HTTP must go through dle.models.egress.EgressClient (AGENTS.md rule 7, NFR-SEC-03)
+    severity: ERROR
+    languages: [python]
+    paths:
+      exclude: [dle/models/egress.py, tests/]
+    pattern-either:
+      - pattern: import httpx
+      - pattern: import requests
+      - pattern: import urllib.request
+      - pattern: import socket
+      - pattern: from httpx import $X
+      - pattern: from requests import $X
+  - id: dle-no-dynamic-exec
+    message: No eval, exec or pickle on content (DLE-SEC secure coding rules)
+    severity: ERROR
+    languages: [python]
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: exec(...)
+      - pattern: pickle.loads(...)
+  - id: dle-no-content-in-logs
+    message: Never log prompt, response or passage text (NFR-PRIV-01); log IDs and hashes
+    severity: ERROR
+    languages: [python]
+    pattern-either:
+      - pattern: $LOG.$M(..., text=$X, ...)
+      - pattern: $LOG.$M(..., prompt=$X, ...)
+      - pattern: $LOG.$M(..., passage=$X, ...)
+  - id: dle-no-ka-dispatch
+    message: Dispatch by DVSS ID only; KA numbers are catalog references (ADR-009)
+    severity: ERROR
+    languages: [python]
+    pattern: $F.invoke("=~/^KA-/", ...)

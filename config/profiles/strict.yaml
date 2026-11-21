@@ -1,0 +1,21 @@
+# Release profile: strict (model dle-13axis-strict). Kernel K01–K12 always on and not listed (ADR-010).
+schema_version: 1.0.0
+name: strict
+release: { below_cutoff: released, at_or_above_cutoff: held, drift_latched: held }
+alpha: 0.05
+policy_functions:
+  DVSS-P01: on
+  DVSS-P02: on
+  DVSS-P03: on
+  DVSS-P04: on
+  DVSS-P05: off        # offline only
+  DVSS-P06: on
+  DVSS-P07: on         # host fallback required
+  DVSS-P08: on         # host fallback required
+  DVSS-P09: off
+  DVSS-P10: on
+  DVSS-P11: tier3
+  DVSS-P12: on         # host fallback required
+  DVSS-P13: on
+  DVSS-P14: off        # offline only
+blinded_assurance_roles: false

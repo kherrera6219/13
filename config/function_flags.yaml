@@ -1,0 +1,7 @@
+# Client functions flagged consequential (FR-TOOL-05, decision D6). Flagging adds Regulator review of
+# claims that rely on the function's result; it never blocks the call.
+schema_version: 1.0.0
+consequential_functions: []
+# example:
+#  - name: submit_purchase_order
+#    reason: Creates a financial commitment

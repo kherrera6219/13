@@ -1,0 +1,199 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/registry/axis6_hub.schema.json",
+  "title": "Axis 6 Octopus hub: one concept fanned out to the rule sources that define or use it",
+  "type": "object",
+  "properties": {
+    "hub_id": {
+      "type": "string",
+      "pattern": "^\\[HUB:6\\.[1-9][0-9]*\\]$"
+    },
+    "concept": {
+      "type": "string",
+      "minLength": 1
+    },
+    "definition": {
+      "type": "string",
+      "minLength": 1
+    },
+    "anchors": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^\\[[A-Z][A-Z0-9-]*:(?:1[0-3]|[1-9])(?:\\.(?:0|[1-9][0-9]*))+\\]$",
+        "description": "Canonical permanent atom, e.g. [PL:1.27.0.0]"
+      }
+    },
+    "arms": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "arm_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]+$"
+          },
+          "authority": {
+            "type": "string",
+            "minLength": 1
+          },
+          "instrument": {
+            "type": "string",
+            "minLength": 1
+          },
+          "citation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "edition": {
+            "type": "string",
+            "minLength": 1
+          },
+          "relation": {
+            "enum": [
+              "defines",
+              "uses",
+              "requires",
+              "permits",
+              "prohibits",
+              "exempts"
+            ]
+          },
+          "jurisdiction": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\[[A-Z][A-Z0-9-]*:(?:1[0-3]|[1-9])(?:\\.(?:0|[1-9][0-9]*))+\\]$",
+                "description": "Canonical permanent atom, e.g. [PL:1.27.0.0]"
+              },
+              {
+                "enum": [
+                  "unscoped",
+                  "unknown"
+                ]
+              }
+            ]
+          },
+          "valid_from": {
+            "type": "string",
+            "format": "date"
+          },
+          "valid_to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "evidence_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "source": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Authority or document title"
+                },
+                "locator": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Section, clause, page or URL fragment"
+                },
+                "edition": {
+                  "type": "string"
+                },
+                "passage_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              },
+              "required": [
+                "evidence_id",
+                "source",
+                "locator"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "arm_id",
+          "authority",
+          "instrument",
+          "citation",
+          "edition",
+          "relation",
+          "evidence"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "status": {
+      "enum": [
+        "proposed",
+        "verified",
+        "retired",
+        "fixture"
+      ],
+      "description": "Only verified records may support a binding claim. proposed: discovery only. fixture: tests only, never loaded in production."
+    },
+    "owner": {
+      "type": "string",
+      "minLength": 1
+    },
+    "valid_from": {
+      "type": "string",
+      "format": "date"
+    },
+    "valid_to": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "jurisdiction": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^\\[[A-Z][A-Z0-9-]*:(?:1[0-3]|[1-9])(?:\\.(?:0|[1-9][0-9]*))+\\]$",
+          "description": "Canonical permanent atom, e.g. [PL:1.27.0.0]"
+        },
+        {
+          "enum": [
+            "unscoped",
+            "unknown"
+          ]
+        }
+      ]
+    },
+    "note": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "hub_id",
+    "concept",
+    "definition",
+    "arms",
+    "status",
+    "owner",
+    "valid_from"
+  ],
+  "additionalProperties": false
+}

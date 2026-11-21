@@ -1,0 +1,7 @@
+# Ablation arm A (paper §17, FR-FN-09): kernel functions plus the required host fallbacks for P07, P08, P12 behavior.
+schema_version: 1.0.0
+name: kernel_only
+release: { below_cutoff: released, at_or_above_cutoff: held, drift_latched: held }
+alpha: 0.05
+policy_functions: {}   # all off; host fallbacks for P07, P08, P12 still run
+blinded_assurance_roles: false

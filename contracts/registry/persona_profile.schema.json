@@ -1,0 +1,1057 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/registry/persona_profile.schema.json",
+  "title": "Persona profile for Axes 8\u201311 (MDKF seven parts)",
+  "type": "object",
+  "properties": {
+    "profile_id": {
+      "type": "string",
+      "pattern": "^\\[ROLE:(?:8|9|10|11)\\.[1-9][0-9]*\\]$"
+    },
+    "axis": {
+      "enum": [
+        8,
+        9,
+        10,
+        11
+      ]
+    },
+    "role_name": {
+      "enum": [
+        "Scholar",
+        "Practitioner",
+        "Regulator",
+        "Harmonizer"
+      ]
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "built_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "inputs": {
+      "type": "object",
+      "properties": {
+        "pillars": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^\\[[A-Z][A-Z0-9-]*:(?:1[0-3]|[1-9])(?:\\.(?:0|[1-9][0-9]*))+\\]$"
+          }
+        },
+        "branches": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^\\[[A-Z][A-Z0-9-]*:(?:1[0-3]|[1-9])(?:\\.(?:0|[1-9][0-9]*))+\\]$"
+          }
+        },
+        "sectors": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^\\[[A-Z][A-Z0-9-]*:(?:1[0-3]|[1-9])(?:\\.(?:0|[1-9][0-9]*))+\\]$"
+          }
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^\\[[A-Z][A-Z0-9-]*:(?:1[0-3]|[1-9])(?:\\.(?:0|[1-9][0-9]*))+\\]$"
+          }
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^\\[[A-Z][A-Z0-9-]*:(?:1[0-3]|[1-9])(?:\\.(?:0|[1-9][0-9]*))+\\]$"
+          }
+        },
+        "hubs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^\\[[A-Z][A-Z0-9-]*:(?:1[0-3]|[1-9])(?:\\.(?:0|[1-9][0-9]*))+\\]$"
+          }
+        },
+        "hub_arms": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^\\[HUB:6\\.[1-9][0-9]*\\]#[a-z0-9-]+$"
+          }
+        },
+        "meshes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^\\[[A-Z][A-Z0-9-]*:(?:1[0-3]|[1-9])(?:\\.(?:0|[1-9][0-9]*))+\\]$"
+          }
+        },
+        "jurisdiction": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\[[A-Z][A-Z0-9-]*:(?:1[0-3]|[1-9])(?:\\.(?:0|[1-9][0-9]*))+\\]$"
+            },
+            {
+              "enum": [
+                "unscoped",
+                "unknown"
+              ]
+            }
+          ]
+        },
+        "valid_time": {
+          "type": "object",
+          "properties": {
+            "as_of": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          "required": [
+            "as_of"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "mandate": {
+      "type": "string",
+      "minLength": 1
+    },
+    "admissible_evidence": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "prohibited_decisions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "visibility_policy": {
+      "enum": [
+        "sealed_packet"
+      ]
+    },
+    "fields": {
+      "type": "object",
+      "properties": {
+        "job_role": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "scheme": {
+              "enum": [
+                "CIP2020",
+                "SOC2018",
+                "ONET-SOC",
+                "competency",
+                "hub_arm",
+                "mesh",
+                "sector",
+                "pillar",
+                "branch"
+              ]
+            },
+            "code": {
+              "type": "string",
+              "minLength": 1
+            },
+            "derived_from": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^\\[[A-Z][A-Z0-9-]*:(?:1[0-3]|[1-9])(?:\\.(?:0|[1-9][0-9]*))+\\]$"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^\\[HUB:6\\.[1-9][0-9]*\\]#[a-z0-9-]+$"
+                  }
+                ]
+              },
+              "description": "Address atoms or hub arms this item was built from"
+            }
+          },
+          "required": [
+            "text",
+            "derived_from"
+          ],
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "scheme": {
+                    "const": "CIP2020"
+                  }
+                },
+                "required": [
+                  "scheme"
+                ]
+              },
+              "then": {
+                "required": [
+                  "code"
+                ],
+                "properties": {
+                  "code": {
+                    "pattern": "^[0-9]{2}(?:\\.[0-9]{2}(?:[0-9]{2})?)?$"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "scheme": {
+                    "enum": [
+                      "SOC2018",
+                      "ONET-SOC"
+                    ]
+                  }
+                },
+                "required": [
+                  "scheme"
+                ]
+              },
+              "then": {
+                "required": [
+                  "code"
+                ],
+                "properties": {
+                  "code": {
+                    "pattern": "^[0-9]{2}-[0-9]{4}(?:\\.[0-9]{2})?$"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "education": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "scheme": {
+                "enum": [
+                  "CIP2020",
+                  "SOC2018",
+                  "ONET-SOC",
+                  "competency",
+                  "hub_arm",
+                  "mesh",
+                  "sector",
+                  "pillar",
+                  "branch"
+                ]
+              },
+              "code": {
+                "type": "string",
+                "minLength": 1
+              },
+              "derived_from": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^\\[[A-Z][A-Z0-9-]*:(?:1[0-3]|[1-9])(?:\\.(?:0|[1-9][0-9]*))+\\]$"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^\\[HUB:6\\.[1-9][0-9]*\\]#[a-z0-9-]+$"
+                    }
+                  ]
+                },
+                "description": "Address atoms or hub arms this item was built from"
+              }
+            },
+            "required": [
+              "text",
+              "derived_from"
+            ],
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "scheme": {
+                      "const": "CIP2020"
+                    }
+                  },
+                  "required": [
+                    "scheme"
+                  ]
+                },
+                "then": {
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "pattern": "^[0-9]{2}(?:\\.[0-9]{2}(?:[0-9]{2})?)?$"
+                    }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "scheme": {
+                      "enum": [
+                        "SOC2018",
+                        "ONET-SOC"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "scheme"
+                  ]
+                },
+                "then": {
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "pattern": "^[0-9]{2}-[0-9]{4}(?:\\.[0-9]{2})?$"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "minItems": 1
+        },
+        "certifications": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "scheme": {
+                "enum": [
+                  "CIP2020",
+                  "SOC2018",
+                  "ONET-SOC",
+                  "competency",
+                  "hub_arm",
+                  "mesh",
+                  "sector",
+                  "pillar",
+                  "branch"
+                ]
+              },
+              "code": {
+                "type": "string",
+                "minLength": 1
+              },
+              "derived_from": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^\\[[A-Z][A-Z0-9-]*:(?:1[0-3]|[1-9])(?:\\.(?:0|[1-9][0-9]*))+\\]$"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^\\[HUB:6\\.[1-9][0-9]*\\]#[a-z0-9-]+$"
+                    }
+                  ]
+                },
+                "description": "Address atoms or hub arms this item was built from"
+              }
+            },
+            "required": [
+              "text",
+              "derived_from"
+            ],
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "scheme": {
+                      "const": "CIP2020"
+                    }
+                  },
+                  "required": [
+                    "scheme"
+                  ]
+                },
+                "then": {
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "pattern": "^[0-9]{2}(?:\\.[0-9]{2}(?:[0-9]{2})?)?$"
+                    }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "scheme": {
+                      "enum": [
+                        "SOC2018",
+                        "ONET-SOC"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "scheme"
+                  ]
+                },
+                "then": {
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "pattern": "^[0-9]{2}-[0-9]{4}(?:\\.[0-9]{2})?$"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "minItems": 1
+        },
+        "skills": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "scheme": {
+                "enum": [
+                  "CIP2020",
+                  "SOC2018",
+                  "ONET-SOC",
+                  "competency",
+                  "hub_arm",
+                  "mesh",
+                  "sector",
+                  "pillar",
+                  "branch"
+                ]
+              },
+              "code": {
+                "type": "string",
+                "minLength": 1
+              },
+              "derived_from": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^\\[[A-Z][A-Z0-9-]*:(?:1[0-3]|[1-9])(?:\\.(?:0|[1-9][0-9]*))+\\]$"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^\\[HUB:6\\.[1-9][0-9]*\\]#[a-z0-9-]+$"
+                    }
+                  ]
+                },
+                "description": "Address atoms or hub arms this item was built from"
+              }
+            },
+            "required": [
+              "text",
+              "derived_from"
+            ],
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "scheme": {
+                      "const": "CIP2020"
+                    }
+                  },
+                  "required": [
+                    "scheme"
+                  ]
+                },
+                "then": {
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "pattern": "^[0-9]{2}(?:\\.[0-9]{2}(?:[0-9]{2})?)?$"
+                    }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "scheme": {
+                      "enum": [
+                        "SOC2018",
+                        "ONET-SOC"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "scheme"
+                  ]
+                },
+                "then": {
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "pattern": "^[0-9]{2}-[0-9]{4}(?:\\.[0-9]{2})?$"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "minItems": 1
+        },
+        "job_training": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "scheme": {
+                "enum": [
+                  "CIP2020",
+                  "SOC2018",
+                  "ONET-SOC",
+                  "competency",
+                  "hub_arm",
+                  "mesh",
+                  "sector",
+                  "pillar",
+                  "branch"
+                ]
+              },
+              "code": {
+                "type": "string",
+                "minLength": 1
+              },
+              "derived_from": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^\\[[A-Z][A-Z0-9-]*:(?:1[0-3]|[1-9])(?:\\.(?:0|[1-9][0-9]*))+\\]$"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^\\[HUB:6\\.[1-9][0-9]*\\]#[a-z0-9-]+$"
+                    }
+                  ]
+                },
+                "description": "Address atoms or hub arms this item was built from"
+              }
+            },
+            "required": [
+              "text",
+              "derived_from"
+            ],
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "scheme": {
+                      "const": "CIP2020"
+                    }
+                  },
+                  "required": [
+                    "scheme"
+                  ]
+                },
+                "then": {
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "pattern": "^[0-9]{2}(?:\\.[0-9]{2}(?:[0-9]{2})?)?$"
+                    }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "scheme": {
+                      "enum": [
+                        "SOC2018",
+                        "ONET-SOC"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "scheme"
+                  ]
+                },
+                "then": {
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "pattern": "^[0-9]{2}-[0-9]{4}(?:\\.[0-9]{2})?$"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "minItems": 1
+        },
+        "career_path": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "scheme": {
+                "enum": [
+                  "CIP2020",
+                  "SOC2018",
+                  "ONET-SOC",
+                  "competency",
+                  "hub_arm",
+                  "mesh",
+                  "sector",
+                  "pillar",
+                  "branch"
+                ]
+              },
+              "code": {
+                "type": "string",
+                "minLength": 1
+              },
+              "derived_from": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^\\[[A-Z][A-Z0-9-]*:(?:1[0-3]|[1-9])(?:\\.(?:0|[1-9][0-9]*))+\\]$"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^\\[HUB:6\\.[1-9][0-9]*\\]#[a-z0-9-]+$"
+                    }
+                  ]
+                },
+                "description": "Address atoms or hub arms this item was built from"
+              }
+            },
+            "required": [
+              "text",
+              "derived_from"
+            ],
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "scheme": {
+                      "const": "CIP2020"
+                    }
+                  },
+                  "required": [
+                    "scheme"
+                  ]
+                },
+                "then": {
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "pattern": "^[0-9]{2}(?:\\.[0-9]{2}(?:[0-9]{2})?)?$"
+                    }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "scheme": {
+                      "enum": [
+                        "SOC2018",
+                        "ONET-SOC"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "scheme"
+                  ]
+                },
+                "then": {
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "pattern": "^[0-9]{2}-[0-9]{4}(?:\\.[0-9]{2})?$"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "minItems": 1
+        },
+        "related_jobs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "scheme": {
+                "enum": [
+                  "CIP2020",
+                  "SOC2018",
+                  "ONET-SOC",
+                  "competency",
+                  "hub_arm",
+                  "mesh",
+                  "sector",
+                  "pillar",
+                  "branch"
+                ]
+              },
+              "code": {
+                "type": "string",
+                "minLength": 1
+              },
+              "derived_from": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^\\[[A-Z][A-Z0-9-]*:(?:1[0-3]|[1-9])(?:\\.(?:0|[1-9][0-9]*))+\\]$"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^\\[HUB:6\\.[1-9][0-9]*\\]#[a-z0-9-]+$"
+                    }
+                  ]
+                },
+                "description": "Address atoms or hub arms this item was built from"
+              }
+            },
+            "required": [
+              "text",
+              "derived_from"
+            ],
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "scheme": {
+                      "const": "CIP2020"
+                    }
+                  },
+                  "required": [
+                    "scheme"
+                  ]
+                },
+                "then": {
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "pattern": "^[0-9]{2}(?:\\.[0-9]{2}(?:[0-9]{2})?)?$"
+                    }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "scheme": {
+                      "enum": [
+                        "SOC2018",
+                        "ONET-SOC"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "scheme"
+                  ]
+                },
+                "then": {
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "pattern": "^[0-9]{2}-[0-9]{4}(?:\\.[0-9]{2})?$"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "job_role",
+        "education",
+        "certifications",
+        "skills",
+        "job_training",
+        "career_path",
+        "related_jobs"
+      ],
+      "additionalProperties": false
+    },
+    "conduct_ref": {
+      "type": "string",
+      "pattern": "^config/personas/conduct\\.yaml#axis(?:8|9|10|11)$"
+    },
+    "selection": {
+      "type": "object",
+      "properties": {
+        "eligible": {
+          "type": "boolean"
+        },
+        "E": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "C": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "X": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "M": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "required": [
+        "eligible",
+        "M"
+      ],
+      "additionalProperties": false
+    },
+    "status": {
+      "enum": [
+        "built",
+        "persisted",
+        "fixture"
+      ]
+    }
+  },
+  "required": [
+    "profile_id",
+    "axis",
+    "role_name",
+    "version",
+    "inputs",
+    "mandate",
+    "admissible_evidence",
+    "prohibited_decisions",
+    "visibility_policy",
+    "fields",
+    "conduct_ref",
+    "selection",
+    "status"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "axis": {
+            "const": 8
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "role_name": {
+            "const": "Scholar"
+          },
+          "inputs": {
+            "required": [
+              "pillars"
+            ],
+            "properties": {
+              "pillars": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "axis": {
+            "const": 9
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "role_name": {
+            "const": "Practitioner"
+          },
+          "inputs": {
+            "required": [
+              "sectors"
+            ],
+            "properties": {
+              "sectors": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "axis": {
+            "const": 10
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "role_name": {
+            "const": "Regulator"
+          },
+          "inputs": {
+            "required": [
+              "hubs",
+              "hub_arms",
+              "jurisdiction"
+            ],
+            "properties": {
+              "hubs": {
+                "minItems": 1
+              },
+              "hub_arms": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "axis": {
+            "const": 11
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "role_name": {
+            "const": "Harmonizer"
+          },
+          "inputs": {
+            "required": [
+              "meshes",
+              "jurisdiction"
+            ],
+            "properties": {
+              "meshes": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

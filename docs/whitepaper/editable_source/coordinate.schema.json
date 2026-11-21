@@ -1,0 +1,1000 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CoordinateVector_13_DVSS_3_7_1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "axis_1_pillars": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "axis_id": {
+            "const": 1
+          },
+          "meta_tag": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9-]*$"
+          },
+          "nuremberg_path": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "minItems": 1
+          },
+          "canonical_str": {
+            "type": "string",
+            "pattern": "^\\[[A-Z][A-Z0-9-]*:1(?:\\.(?:0|[1-9][0-9]*))+\\]$"
+          }
+        },
+        "required": [
+          "axis_id",
+          "meta_tag",
+          "nuremberg_path",
+          "canonical_str"
+        ],
+        "additionalProperties": false
+      },
+      "uniqueItems": true,
+      "minItems": 1
+    },
+    "axis_2_sectors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "axis_id": {
+            "const": 2
+          },
+          "meta_tag": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9-]*$"
+          },
+          "nuremberg_path": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "minItems": 1
+          },
+          "canonical_str": {
+            "type": "string",
+            "pattern": "^\\[[A-Z][A-Z0-9-]*:2(?:\\.(?:0|[1-9][0-9]*))+\\]$"
+          }
+        },
+        "required": [
+          "axis_id",
+          "meta_tag",
+          "nuremberg_path",
+          "canonical_str"
+        ],
+        "additionalProperties": false
+      },
+      "uniqueItems": true
+    },
+    "axis_3_honeycomb": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "axis_id": {
+            "const": 3
+          },
+          "meta_tag": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9-]*$"
+          },
+          "nuremberg_path": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "minItems": 1
+          },
+          "canonical_str": {
+            "type": "string",
+            "pattern": "^\\[[A-Z][A-Z0-9-]*:3(?:\\.(?:0|[1-9][0-9]*))+\\]$"
+          }
+        },
+        "required": [
+          "axis_id",
+          "meta_tag",
+          "nuremberg_path",
+          "canonical_str"
+        ],
+        "additionalProperties": false
+      },
+      "uniqueItems": true
+    },
+    "axis_4_branches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "axis_id": {
+            "const": 4
+          },
+          "meta_tag": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9-]*$"
+          },
+          "nuremberg_path": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "minItems": 1
+          },
+          "canonical_str": {
+            "type": "string",
+            "pattern": "^\\[[A-Z][A-Z0-9-]*:4(?:\\.(?:0|[1-9][0-9]*))+\\]$"
+          }
+        },
+        "required": [
+          "axis_id",
+          "meta_tag",
+          "nuremberg_path",
+          "canonical_str"
+        ],
+        "additionalProperties": false
+      },
+      "uniqueItems": true
+    },
+    "axis_5_nodes": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "axis_id": {
+                "const": 5
+              },
+              "meta_tag": {
+                "type": "string",
+                "pattern": "^[A-Z][A-Z0-9-]*$",
+                "not": {
+                  "const": "TMP"
+                }
+              },
+              "nuremberg_path": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "minItems": 1
+              },
+              "canonical_str": {
+                "type": "string",
+                "pattern": "^\\[[A-Z][A-Z0-9-]*:5(?:\\.(?:0|[1-9][0-9]*))+\\]$"
+              }
+            },
+            "required": [
+              "axis_id",
+              "meta_tag",
+              "nuremberg_path",
+              "canonical_str"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "axis_id": {
+                "const": 5
+              },
+              "meta_tag": {
+                "const": "TMP"
+              },
+              "session_uuid": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^[0-9a-f-]{36}$"
+              },
+              "node_uuid": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^[0-9a-f-]{36}$"
+              },
+              "status": {
+                "const": "synthetic_derived"
+              },
+              "canonical_str": {
+                "type": "string",
+                "pattern": "^\\[TMP:5\\.TMP\\.[a-f0-9-]{36}\\]$"
+              }
+            },
+            "required": [
+              "axis_id",
+              "meta_tag",
+              "session_uuid",
+              "node_uuid",
+              "status",
+              "canonical_str"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "uniqueItems": true
+    },
+    "axis_6_octopus": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "axis_id": {
+            "const": 6
+          },
+          "meta_tag": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9-]*$"
+          },
+          "nuremberg_path": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "minItems": 1
+          },
+          "canonical_str": {
+            "type": "string",
+            "pattern": "^\\[[A-Z][A-Z0-9-]*:6(?:\\.(?:0|[1-9][0-9]*))+\\]$"
+          }
+        },
+        "required": [
+          "axis_id",
+          "meta_tag",
+          "nuremberg_path",
+          "canonical_str"
+        ],
+        "additionalProperties": false
+      },
+      "uniqueItems": true
+    },
+    "axis_7_spiderweb": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "axis_id": {
+            "const": 7
+          },
+          "meta_tag": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9-]*$"
+          },
+          "nuremberg_path": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "minItems": 1
+          },
+          "canonical_str": {
+            "type": "string",
+            "pattern": "^\\[[A-Z][A-Z0-9-]*:7(?:\\.(?:0|[1-9][0-9]*))+\\]$"
+          }
+        },
+        "required": [
+          "axis_id",
+          "meta_tag",
+          "nuremberg_path",
+          "canonical_str"
+        ],
+        "additionalProperties": false
+      },
+      "uniqueItems": true
+    },
+    "axis_8_scholar": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "axis_id": {
+            "const": 8
+          },
+          "meta_tag": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9-]*$"
+          },
+          "nuremberg_path": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "minItems": 1
+          },
+          "canonical_str": {
+            "type": "string",
+            "pattern": "^\\[[A-Z][A-Z0-9-]*:8(?:\\.(?:0|[1-9][0-9]*))+\\]$"
+          }
+        },
+        "required": [
+          "axis_id",
+          "meta_tag",
+          "nuremberg_path",
+          "canonical_str"
+        ],
+        "additionalProperties": false
+      },
+      "uniqueItems": true
+    },
+    "axis_9_practitioner": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "axis_id": {
+            "const": 9
+          },
+          "meta_tag": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9-]*$"
+          },
+          "nuremberg_path": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "minItems": 1
+          },
+          "canonical_str": {
+            "type": "string",
+            "pattern": "^\\[[A-Z][A-Z0-9-]*:9(?:\\.(?:0|[1-9][0-9]*))+\\]$"
+          }
+        },
+        "required": [
+          "axis_id",
+          "meta_tag",
+          "nuremberg_path",
+          "canonical_str"
+        ],
+        "additionalProperties": false
+      },
+      "uniqueItems": true
+    },
+    "axis_10_regulator": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "axis_id": {
+            "const": 10
+          },
+          "meta_tag": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9-]*$"
+          },
+          "nuremberg_path": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "minItems": 1
+          },
+          "canonical_str": {
+            "type": "string",
+            "pattern": "^\\[[A-Z][A-Z0-9-]*:10(?:\\.(?:0|[1-9][0-9]*))+\\]$"
+          }
+        },
+        "required": [
+          "axis_id",
+          "meta_tag",
+          "nuremberg_path",
+          "canonical_str"
+        ],
+        "additionalProperties": false
+      },
+      "uniqueItems": true
+    },
+    "axis_11_compliance": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "axis_id": {
+            "const": 11
+          },
+          "meta_tag": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9-]*$"
+          },
+          "nuremberg_path": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "minItems": 1
+          },
+          "canonical_str": {
+            "type": "string",
+            "pattern": "^\\[[A-Z][A-Z0-9-]*:11(?:\\.(?:0|[1-9][0-9]*))+\\]$"
+          }
+        },
+        "required": [
+          "axis_id",
+          "meta_tag",
+          "nuremberg_path",
+          "canonical_str"
+        ],
+        "additionalProperties": false
+      },
+      "uniqueItems": true
+    },
+    "axis_12_jurisdiction": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "axis_id": {
+            "const": 12
+          },
+          "meta_tag": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9-]*$"
+          },
+          "nuremberg_path": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "minItems": 1
+          },
+          "canonical_str": {
+            "type": "string",
+            "pattern": "^\\[[A-Z][A-Z0-9-]*:12(?:\\.(?:0|[1-9][0-9]*))+\\]$"
+          }
+        },
+        "required": [
+          "axis_id",
+          "meta_tag",
+          "nuremberg_path",
+          "canonical_str"
+        ],
+        "additionalProperties": false
+      },
+      "uniqueItems": true
+    },
+    "axis_13_temporal": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "claim_scope": {
+            "type": "string",
+            "minLength": 1
+          },
+          "effective_start": {
+            "type": "string",
+            "format": "date"
+          },
+          "effective_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "required": [
+          "claim_scope",
+          "effective_start",
+          "effective_end",
+          "as_of"
+        ],
+        "additionalProperties": false
+      },
+      "uniqueItems": true,
+      "minItems": 1
+    },
+    "schema_version": {
+      "const": "3.7.1"
+    },
+    "registry_manifest_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "jurisdiction_state": {
+      "enum": [
+        "specified",
+        "unknown",
+        "unscoped"
+      ]
+    },
+    "slot_states": {
+      "type": "object",
+      "description": "Explicit state for Axes 2-11. Axes 1 and 13 always carry entries; Axis 12 uses jurisdiction_state.",
+      "properties": {
+        "axis_2_sectors": {
+          "enum": [
+            "specified",
+            "empty",
+            "unknown",
+            "not_applicable"
+          ]
+        },
+        "axis_3_honeycomb": {
+          "enum": [
+            "specified",
+            "empty",
+            "unknown",
+            "not_applicable"
+          ]
+        },
+        "axis_4_branches": {
+          "enum": [
+            "specified",
+            "empty",
+            "unknown",
+            "not_applicable"
+          ]
+        },
+        "axis_5_nodes": {
+          "enum": [
+            "specified",
+            "empty",
+            "unknown",
+            "not_applicable"
+          ]
+        },
+        "axis_6_octopus": {
+          "enum": [
+            "specified",
+            "empty",
+            "unknown",
+            "not_applicable"
+          ]
+        },
+        "axis_7_spiderweb": {
+          "enum": [
+            "specified",
+            "empty",
+            "unknown",
+            "not_applicable"
+          ]
+        },
+        "axis_8_scholar": {
+          "enum": [
+            "specified",
+            "empty",
+            "unknown",
+            "not_applicable"
+          ]
+        },
+        "axis_9_practitioner": {
+          "enum": [
+            "specified",
+            "empty",
+            "unknown",
+            "not_applicable"
+          ]
+        },
+        "axis_10_regulator": {
+          "enum": [
+            "specified",
+            "empty",
+            "unknown",
+            "not_applicable"
+          ]
+        },
+        "axis_11_compliance": {
+          "enum": [
+            "specified",
+            "empty",
+            "unknown",
+            "not_applicable"
+          ]
+        }
+      },
+      "required": [
+        "axis_2_sectors",
+        "axis_3_honeycomb",
+        "axis_4_branches",
+        "axis_5_nodes",
+        "axis_6_octopus",
+        "axis_7_spiderweb",
+        "axis_8_scholar",
+        "axis_9_practitioner",
+        "axis_10_regulator",
+        "axis_11_compliance"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "axis_1_pillars",
+    "axis_2_sectors",
+    "axis_3_honeycomb",
+    "axis_4_branches",
+    "axis_5_nodes",
+    "axis_6_octopus",
+    "axis_7_spiderweb",
+    "axis_8_scholar",
+    "axis_9_practitioner",
+    "axis_10_regulator",
+    "axis_11_compliance",
+    "axis_12_jurisdiction",
+    "axis_13_temporal",
+    "schema_version",
+    "registry_manifest_sha256",
+    "jurisdiction_state",
+    "slot_states"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "jurisdiction_state": {
+            "const": "specified"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "axis_12_jurisdiction": {
+            "minItems": 1
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "axis_12_jurisdiction": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "slot_states": {
+            "properties": {
+              "axis_2_sectors": {
+                "const": "specified"
+              }
+            },
+            "required": [
+              "axis_2_sectors"
+            ]
+          }
+        },
+        "required": [
+          "slot_states"
+        ]
+      },
+      "then": {
+        "properties": {
+          "axis_2_sectors": {
+            "minItems": 1
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "axis_2_sectors": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "slot_states": {
+            "properties": {
+              "axis_3_honeycomb": {
+                "const": "specified"
+              }
+            },
+            "required": [
+              "axis_3_honeycomb"
+            ]
+          }
+        },
+        "required": [
+          "slot_states"
+        ]
+      },
+      "then": {
+        "properties": {
+          "axis_3_honeycomb": {
+            "minItems": 1
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "axis_3_honeycomb": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "slot_states": {
+            "properties": {
+              "axis_4_branches": {
+                "const": "specified"
+              }
+            },
+            "required": [
+              "axis_4_branches"
+            ]
+          }
+        },
+        "required": [
+          "slot_states"
+        ]
+      },
+      "then": {
+        "properties": {
+          "axis_4_branches": {
+            "minItems": 1
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "axis_4_branches": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "slot_states": {
+            "properties": {
+              "axis_5_nodes": {
+                "const": "specified"
+              }
+            },
+            "required": [
+              "axis_5_nodes"
+            ]
+          }
+        },
+        "required": [
+          "slot_states"
+        ]
+      },
+      "then": {
+        "properties": {
+          "axis_5_nodes": {
+            "minItems": 1
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "axis_5_nodes": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "slot_states": {
+            "properties": {
+              "axis_6_octopus": {
+                "const": "specified"
+              }
+            },
+            "required": [
+              "axis_6_octopus"
+            ]
+          }
+        },
+        "required": [
+          "slot_states"
+        ]
+      },
+      "then": {
+        "properties": {
+          "axis_6_octopus": {
+            "minItems": 1
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "axis_6_octopus": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "slot_states": {
+            "properties": {
+              "axis_7_spiderweb": {
+                "const": "specified"
+              }
+            },
+            "required": [
+              "axis_7_spiderweb"
+            ]
+          }
+        },
+        "required": [
+          "slot_states"
+        ]
+      },
+      "then": {
+        "properties": {
+          "axis_7_spiderweb": {
+            "minItems": 1
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "axis_7_spiderweb": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "slot_states": {
+            "properties": {
+              "axis_8_scholar": {
+                "const": "specified"
+              }
+            },
+            "required": [
+              "axis_8_scholar"
+            ]
+          }
+        },
+        "required": [
+          "slot_states"
+        ]
+      },
+      "then": {
+        "properties": {
+          "axis_8_scholar": {
+            "minItems": 1
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "axis_8_scholar": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "slot_states": {
+            "properties": {
+              "axis_9_practitioner": {
+                "const": "specified"
+              }
+            },
+            "required": [
+              "axis_9_practitioner"
+            ]
+          }
+        },
+        "required": [
+          "slot_states"
+        ]
+      },
+      "then": {
+        "properties": {
+          "axis_9_practitioner": {
+            "minItems": 1
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "axis_9_practitioner": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "slot_states": {
+            "properties": {
+              "axis_10_regulator": {
+                "const": "specified"
+              }
+            },
+            "required": [
+              "axis_10_regulator"
+            ]
+          }
+        },
+        "required": [
+          "slot_states"
+        ]
+      },
+      "then": {
+        "properties": {
+          "axis_10_regulator": {
+            "minItems": 1
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "axis_10_regulator": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "slot_states": {
+            "properties": {
+              "axis_11_compliance": {
+                "const": "specified"
+              }
+            },
+            "required": [
+              "axis_11_compliance"
+            ]
+          }
+        },
+        "required": [
+          "slot_states"
+        ]
+      },
+      "then": {
+        "properties": {
+          "axis_11_compliance": {
+            "minItems": 1
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "axis_11_compliance": {
+            "maxItems": 0
+          }
+        }
+      }
+    }
+  ]
+}

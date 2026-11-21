@@ -1,0 +1,4 @@
+{"branch_id": "[BR:4.1.27.1]", "root": "PL027", "parent": null, "label": "Wireless networking", "depth": 1, "status": "fixture", "owner": "fixture-owner", "valid_from": "2026-01-01"}
+{"branch_id": "[BR:4.1.27.1.1]", "root": "PL027", "parent": "[BR:4.1.27.1]", "label": "Access point deployment", "depth": 2, "status": "fixture", "owner": "fixture-owner", "valid_from": "2026-01-01"}
+{"branch_id": "[BR:4.2.8.493]", "root": "SC08", "parent": null, "label": "Warehousing and Storage", "depth": 1, "naics_2022": "493", "status": "fixture", "owner": "fixture-owner", "valid_from": "2026-01-01"}
+{"branch_id": "[BR:4.2.8.493.4931]", "root": "SC08", "parent": "[BR:4.2.8.493]", "label": "Warehousing and Storage (industry group)", "depth": 2, "naics_2022": "4931", "status": "fixture", "owner": "fixture-owner", "valid_from": "2026-01-01"}

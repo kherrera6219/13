@@ -1,0 +1,9 @@
+# Egress allowlist (NFR-SEC-03). Deny by default. Adding a host is a security-reviewed change.
+schema_version: 1.0.0
+allow:
+  - host: generativelanguage.googleapis.com
+    port: 443
+    purpose: Gemini API
+# - host: <transparency log host>   # only with anchoring_profile external_transparency_log
+#   port: 443
+#   purpose: Receipt anchoring

@@ -1,0 +1,302 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/registry/axis13_interval.schema.json",
+  "title": "Axis 13 valid-time record: a half-open interval with scope, provenance and version chain",
+  "description": "Superset of the coordinate's axis_13_temporal atom (contract 3.7.1). project() in dle/temporal/intervals.py derives the atom.",
+  "type": "object",
+  "properties": {
+    "interval_id": {
+      "type": "string",
+      "pattern": "^\\[TIME:13\\.[1-9][0-9]*\\]$"
+    },
+    "subject": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^\\[[A-Z][A-Z0-9-]*:(?:1[0-3]|[1-9])(?:\\.(?:0|[1-9][0-9]*))+\\]$"
+        },
+        {
+          "type": "string",
+          "pattern": "^\\[HUB:6\\.[1-9][0-9]*\\]#[a-z0-9-]+$"
+        },
+        {
+          "type": "string",
+          "pattern": "^EV-"
+        }
+      ],
+      "description": "What the interval is about: a record atom, a hub arm or an evidence ID"
+    },
+    "claim_scope": {
+      "type": "string",
+      "minLength": 1
+    },
+    "kind": {
+      "enum": [
+        "effective",
+        "applicability",
+        "observation"
+      ]
+    },
+    "granularity": {
+      "enum": [
+        "date",
+        "instant"
+      ]
+    },
+    "start": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "end": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Exclusive. null = open (in force with no known end)"
+    },
+    "time_zone": {
+      "type": "string",
+      "pattern": "^(?:UTC|[A-Za-z]+(?:/[A-Za-z0-9_+-]+)+)$",
+      "description": "IANA zone in which civil dates are read; required for date granularity"
+    },
+    "determination": {
+      "enum": [
+        "stated",
+        "converted",
+        "derived",
+        "unknown"
+      ]
+    },
+    "source_text": {
+      "type": "string",
+      "description": "Original wording, e.g. 'effective through June 30, 2026'"
+    },
+    "source_end_inclusive": {
+      "type": "boolean"
+    },
+    "legacy_form": {
+      "type": "string"
+    },
+    "supersedes": {
+      "type": "string",
+      "pattern": "^\\[TIME:13\\.[1-9][0-9]*\\]$"
+    },
+    "superseded_by": {
+      "type": "string",
+      "pattern": "^\\[TIME:13\\.[1-9][0-9]*\\]$"
+    },
+    "recorded_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "evidence_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1
+          },
+          "locator": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "evidence_id",
+          "source",
+          "locator"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "status": {
+      "enum": [
+        "proposed",
+        "verified",
+        "retired",
+        "fixture"
+      ]
+    }
+  },
+  "required": [
+    "subject",
+    "claim_scope",
+    "kind",
+    "granularity",
+    "start",
+    "end",
+    "determination",
+    "recorded_at",
+    "status"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "granularity": {
+            "const": "date"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "time_zone"
+        ],
+        "properties": {
+          "start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "granularity": {
+            "const": "instant"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "Z$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "Z$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "determination": {
+            "const": "unknown"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "start": {
+            "type": "null"
+          },
+          "end": {
+            "type": "null"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "start": {
+            "not": {
+              "type": "null"
+            }
+          }
+        },
+        "required": [
+          "evidence"
+        ],
+        "allOf": [
+          {
+            "properties": {
+              "evidence": {
+                "minItems": 1
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "determination": {
+            "const": "converted"
+          }
+        }
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "source_text"
+            ]
+          },
+          {
+            "required": [
+              "legacy_form"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

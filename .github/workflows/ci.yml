@@ -1,0 +1,139 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 9 * * *"   # nightly live Gemini tests and full mutation run
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          if [ -f uv.lock ]; then
+            uv sync --frozen
+          else
+            uv sync
+          fi
+      - name: Lint and format check
+        run: |
+          uv run ruff format --check .
+          uv run ruff check .
+      - name: Strict type check
+        run: uv run mypy --strict dle
+      - name: Contract validation (enabled in P1-02)
+        run: |
+          if [ -f dle/tools/validate_contracts.py ]; then
+            uv run python -m dle.tools.validate_contracts
+          else
+            echo "Skipping dle.tools.validate_contracts until P1-02"
+          fi
+      - name: Egress import check (enabled in P1-04)
+        run: |
+          if [ -f dle/tools/check_egress_imports.py ]; then
+            uv run python -m dle.tools.check_egress_imports
+          else
+            echo "Skipping dle.tools.check_egress_imports until P1-04"
+          fi
+      - name: Unit, contract, engine, and fixture tests
+        run: uv run pytest -q --cov=dle --cov-report=xml
+      - name: Gemini compatibility tests (enabled in P1-17)
+        run: |
+          if [ -d tests/gemini_compat ]; then
+            uv run pytest -q tests/gemini_compat
+          else
+            echo "Skipping tests/gemini_compat until P1-17"
+          fi
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          if [ -f uv.lock ]; then
+            uv sync --frozen
+          else
+            uv sync
+          fi
+      - name: SCA
+        run: uv run pip-audit --strict --skip-editable
+      - name: SAST
+        run: uvx semgrep scan --config p/python --config p/secrets --config .semgrep/dle.yml --error --metrics=off
+      - name: Secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: SBOM (CycloneDX)
+        run: uv run cyclonedx-py environment -o sbom.cdx.json
+      - uses: actions/upload-artifact@v4
+        with: { name: sbom, path: sbom.cdx.json }
+
+  ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check UI scaffold
+        if: hashFiles('ui/package.json') == ''
+        run: echo "Skipping UI checks until P1-18"
+      - uses: actions/setup-node@v4
+        if: hashFiles('ui/package.json') != ''
+        with: { node-version: 22 }
+      - name: Install, lint, and test UI
+        if: hashFiles('ui/package.json') != ''
+        run: |
+          npm --prefix ui ci
+          npm --prefix ui run lint
+          npm --prefix ui run build-storybook
+          npm --prefix ui run test-storybook
+
+  nightly-live:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          if [ -f uv.lock ]; then
+            uv sync --frozen
+          else
+            uv sync
+          fi
+      - name: Live Gemini tests
+        run: uv run pytest -q -m live
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      - name: Mutation tests (enabled when host services/kernel exist)
+        run: |
+          if [ -d dle/host/services ] || [ -d dle/host/functions/kernel ]; then
+            uv run mutmut run --paths-to-mutate dle/host/services,dle/host/functions/kernel
+          else
+            echo "Skipping mutmut until host services/kernel are implemented"
+          fi
