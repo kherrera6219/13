@@ -1,18 +1,23 @@
 # Model pins per job and dated prices (NFR-COST-01). Any pin change latches calibration (FR-REL-04).
-# Prices verified 2026-11-20; see docs/vendor/gemini_4_carbon_verification.md.
+# Cloud Google Gemini API models (ADR-011); prices verified 2026-11-20 in docs/vendor/gemini_4_carbon_verification.md.
 schema_version: 1.0.0
 jobs:
-  intake: gemini-4-carbon        # ADR-008 may move this to a cheaper model
-  personas: gemini-4-carbon
-  writer: gemini-4-carbon
-  claim_extraction: gemini-4-carbon
+  intake: gemini-4-neon            # fast structured scoring; swap to gemini-4-carbon anytime
+  personas: gemini-4-carbon        # supports gemini-4-carbon or gemini-4-neon
+  writer: gemini-4-carbon          # supports gemini-4-carbon or gemini-4-neon
+  claim_extraction: gemini-4-neon  # ADR-008: verify within 2 recall pts of Carbon in Phase 2
+  embeddings: gemini-embedding-001 # Decision D3: Google Gemini Embedding API (same egress host)
 prices_usd_per_million_tokens:
   gemini-4-carbon:
     - { from: 2026-11-10, to: 2026-12-01, input: 2.00, output: 10.00, cached_input: 0.10 }
     - { from: 2026-12-01, to: null, input: 4.00, output: 20.00, cached_input: 0.20 }
+  gemini-4-neon:
+    - { from: 2026-11-01, to: null, input: 3.00, output: 15.00, cached_input: 0.15 }
   gemini-4-argon:
     - { from: 2026-10-01, to: 2026-12-01, input: 2.00, output: 10.00, cached_input: 0.10 }
     - { from: 2026-12-01, to: null, input: 4.00, output: 20.00, cached_input: 0.20 }
+  gemini-embedding-001:
+    - { from: 2026-01-01, to: null, input: 0.15, output: 0.00, cached_input: 0.00 }
 local_models:
+  # Independent non-generator NLI entailment scorer only (ADR-006); not an LLM.
   nli: { id: deberta-v3-nli-onnx, sha256: TBD }
-  embeddings: { id: TBD-local-onnx, sha256: TBD }   # decision D3

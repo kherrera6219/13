@@ -25,4 +25,4 @@ DLE-REG-001..002,H3,T-UNIT-REG-01..08,1,implemented
 DLE-SPC-003,H3,T-UNIT-REG-09..15,1,implemented
 DLE-SPC-004,"H3,H8",T-UNIT-REG-16..22,1,implemented
 DLE-SPC-005,"H4,H12",T-UNIT-TMP-01..10,1,implemented
-DLE-REG-001..005;DLE-SPC-003..005;DLE-FNS-001,"contracts,config,store",T-UNIT-REG-23..28,1,implemented
+DLE-REG-001..005;DLE-SPC-003..005;DLE-FNS-001,"contracts,config,store",T-UNIT-REG-23..29,1,implemented

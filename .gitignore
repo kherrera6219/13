@@ -16,6 +16,7 @@ keys/
 *.db-shm
 .env
 .env.*
+!.env.example
 ui/node_modules/
 ui/dist/
 ui/storybook-static/

@@ -65,6 +65,7 @@ Every document, specification, contract and plan for the DataLogicEngine 13-axis
 | ADR-008 | Model split by job | `docs/adr/008-model-split.md` | Proposed |
 | ADR-009 | Dispatch by DVSS ID | `docs/adr/009-dispatch-by-dvss-id.md` | Accepted |
 | ADR-010 | Kernel vs policy levels | `docs/adr/010-kernel-and-policy-levels.md` | Accepted |
+| ADR-011 | Docker delivery for browser runtime and Google Gemini cloud models | `docs/adr/011-docker-browser-and-gemini-cloud.md` | Accepted |
 
 ## 5. Contracts (machine-readable)
 
@@ -111,6 +112,7 @@ Every document, specification, contract and plan for the DataLogicEngine 13-axis
 | DLE-BKL-P1 | Phase 1 backlog (20 tickets) | `docs/backlog/phase1_backlog.md` | G3 |
 | DLE-TST-GC | Gemini compatibility test plan | `docs/test/gemini_compat_test_plan.md` | G4 |
 | DLE-PLN-001 | Pilot migration plan | `docs/plans/pilot_migration.md` | G16 |
+| DLE-PLN-002 | Multi-phase build plan | `docs/plans/multi_phase_build_plan.md` | — |
 | DLE-EVL-001 | Evaluation data plan and budget | `docs/eval/evaluation_data_plan.md` | G17, G20 |
 | DLE-EVL-002 | Grading rubric and grader guide | `docs/eval/grading_rubric.md` | G18 |
 | DLE-EVL-003 | Pre-registered study protocol | `docs/eval/study_protocol.md` | G19 |

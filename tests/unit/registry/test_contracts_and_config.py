@@ -163,3 +163,15 @@ def test_sqlite_migration_executes_and_receipts_accept_cancelled():
                 )
         finally:
             con.close()
+
+
+def test_model_pins_have_prices_and_cloud_embeddings():
+    """T-UNIT-REG-29: model_pins.yaml pins cloud Gemini Neon/Carbon/Embedding with prices."""
+    pins = yaml.safe_load((CONFIG / "model_pins.yaml").read_text(encoding="utf-8"))
+    jobs = pins["jobs"]
+    prices = pins["prices_usd_per_million_tokens"]
+
+    assert jobs["embeddings"] == "gemini-embedding-001"
+    assert {"gemini-4-neon", "gemini-4-carbon"} <= set(prices)
+    for job_name, model_id in jobs.items():
+        assert model_id in prices, f"jobs.{job_name}={model_id!r} missing from price table"

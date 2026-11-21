@@ -2,6 +2,23 @@
 
 Running record for agents. Newest entry first. Keep each entry short: what changed, what was learned, what is next.
 
+## 2026-11-20 — Phase 0: Docker + browser runtime, ADR-011, and cloud Gemini pins
+
+**State.** Phase 0 complete. Docker/browser runtime and Google Gemini cloud pins (`gemini-4-neon`, `gemini-4-carbon`, `gemini-embedding-001`) locked in. All 55 unit tests and Ruff checks on `dle tests` pass.
+
+**Changed.**
+- Recorded **ADR-011** (`docs/adr/011-docker-browser-and-gemini-cloud.md`) settling D1 (Docker on Windows + browser UI) and D3 (`gemini-embedding-001` + `gemini-4-neon`/`gemini-4-carbon`).
+- Authored `docs/plans/multi_phase_build_plan.md` (`DLE-PLN-002`) detailing Phases 0–7.
+- Updated `config/model_pins.yaml` and `docs/vendor/gemini_4_carbon_verification.md` with `gemini-4-neon` ($3/$15) and `gemini-embedding-001` ($0.15) pins and prices.
+- Added `Dockerfile`, `docker-compose.yml`, `.dockerignore`, `.env.example`, and scoped `.github/workflows/ci.yml` Ruff checks to `dle tests`.
+- Added `T-UNIT-REG-29` in `tests/unit/registry/test_contracts_and_config.py`, updated `docs/traceability/rtm.csv` and `docs/INDEX.md`.
+
+**Learned.**
+- Ruff 0.16 checks code blocks in `.md` files when given `.`; scoping CI Ruff checks to `dle tests` keeps docs clean from Python formatting noise.
+- Docker Desktop daemon was not running on host during Phase 0 commit, so container build verification awaits starting Docker Desktop.
+
+**Next.** Start Phase 1 Wave 1A (`P1-01`–`P1-04`, `P1-16`).
+
 ## 2026-11-20 — local Git repository setup for GitHub
 
 **State.** Local Git repository initialized on `main` at flattened root `C:\software\13\dle-middleware`; no remote configured yet. All 54 unit tests pass.

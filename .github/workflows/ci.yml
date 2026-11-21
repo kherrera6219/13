@@ -35,8 +35,8 @@ jobs:
           fi
       - name: Lint and format check
         run: |
-          uv run ruff format --check .
-          uv run ruff check .
+          uv run ruff format --check dle tests
+          uv run ruff check dle tests
       - name: Strict type check
         run: uv run mypy --strict dle
       - name: Contract validation (enabled in P1-02)

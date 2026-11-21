@@ -1,0 +1,54 @@
+services:
+  dle-api:
+    build: .
+    ports:
+      - "127.0.0.1:8740:8740"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DLE_BIND_ADDRESS: "0.0.0.0"
+      DLE_ALLOW_LAN: "true"
+      DLE_DATA_DIR: "/var/lib/dle/data"
+      DLE_KEYS_DIR: "/var/lib/dle/keys"
+      DLE_CALIBRATION_DIR: "/var/lib/dle/calibration"
+      DLE_MODELS_DIR: "/var/lib/dle/models"
+      DLE_UI_DIST_DIR: "/app/ui/dist"
+      DLE_MODEL_BACKEND: "${DLE_MODEL_BACKEND:-fake}"
+    volumes:
+      - dle_data:/var/lib/dle/data
+      - dle_keys:/var/lib/dle/keys
+      - dle_calibration:/var/lib/dle/calibration
+      - dle_models:/var/lib/dle/models
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8740/healthz', timeout=3)",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  dle-ui-dev:
+    profiles: ["dev"]
+    image: node:22-alpine
+    working_dir: /ui
+    volumes:
+      - ./ui:/ui
+    ports:
+      - "127.0.0.1:5173:5173"
+    environment:
+      VITE_DLE_API_TARGET: "http://dle-api:8740"
+    command: ["sh", "-c", "npm install && npm run dev -- --host 0.0.0.0 --port 5173"]
+    depends_on:
+      - dle-api
+
+volumes:
+  dle_data:
+  dle_keys:
+  dle_calibration:
+  dle_models:

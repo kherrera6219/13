@@ -5,9 +5,12 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [Unreleased]
 
 ### Added
+- `docs/adr/011-docker-browser-and-gemini-cloud.md` (ADR-011), `docs/plans/multi_phase_build_plan.md` (`DLE-PLN-002`), `Dockerfile`, `docker-compose.yml`, `.dockerignore`, and `.env.example`.
+- `gemini-4-neon` and `gemini-embedding-001` model pins and pricing in `config/model_pins.yaml` and `docs/vendor/gemini_4_carbon_verification.md`, verified by `T-UNIT-REG-29`.
 - `.gitattributes`, `.python-version` (`3.12`), Hatchling build config in `pyproject.toml`, and v3.13 white paper copies under `docs/whitepaper/`.
 
 ### Fixed
+- Scoped Ruff format and lint checks in `.github/workflows/ci.yml` to `dle tests`.
 - Flattened nested `dle-middleware/dle-middleware` directory into a single repository root and initialized Git on `main`.
 - Added `pytest-cov` and Windows environment marker for `mutmut` in `pyproject.toml`, raised `.pre-commit-config.yaml` file size ceiling to `2500` KB, and gated Phase 1+ steps in `.github/workflows/ci.yml` so scaffold CI runs green.
 - Removed unused `pytest` import in `tests/unit/registry/test_contracts_and_config.py`.
