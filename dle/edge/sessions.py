@@ -156,6 +156,16 @@ class InMemorySessionStore:
         with self._lock:
             return self._records.get(session_id)
 
+    def session_ids(self) -> tuple[str, ...]:
+        """Return a snapshot of active session IDs."""
+        with self._lock:
+            return tuple(self._records.keys())
+
+    def count(self) -> int:
+        """Return the number of active sessions in memory."""
+        with self._lock:
+            return len(self._records)
+
     def purge_expired(self, *, now: datetime | None = None) -> int:
         """Delete expired session records and return count removed."""
         ts = now if now is not None else datetime.now(UTC)

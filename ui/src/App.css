@@ -1,0 +1,195 @@
+/* Layout and shell styling using DLE-STY design tokens exclusively. */
+
+.dle-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--dle-bg);
+  color: var(--dle-text);
+}
+
+.dle-topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dle-space-3);
+  padding: var(--dle-space-3) var(--dle-space-5);
+  border-bottom: 1px solid var(--dle-border);
+  background-color: var(--dle-surface);
+}
+
+.dle-brand {
+  display: flex;
+  align-items: baseline;
+  gap: var(--dle-space-2);
+}
+
+.dle-brand-title {
+  margin: 0;
+  font-size: var(--dle-text-lg);
+  font-weight: var(--dle-weight-strong);
+}
+
+.dle-brand-sub {
+  font-size: var(--dle-text-xs);
+  color: var(--dle-text-muted);
+}
+
+.dle-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--dle-space-2);
+}
+
+.dle-btn-secondary {
+  min-height: 32px;
+  padding: var(--dle-space-1) var(--dle-space-3);
+  border: 1px solid var(--dle-border);
+  border-radius: var(--dle-radius-sm);
+  background-color: var(--dle-bg);
+  color: var(--dle-text);
+  font-family: var(--dle-font-sans);
+  font-size: var(--dle-text-xs);
+  font-weight: var(--dle-weight-strong);
+  cursor: pointer;
+}
+
+.dle-btn-secondary:hover {
+  border-color: var(--dle-accent);
+}
+
+.dle-health-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dle-space-1);
+  padding: 2px var(--dle-space-2);
+  border-radius: var(--dle-radius-sm);
+  border: 1px solid var(--dle-border);
+  background-color: var(--dle-bg);
+  font-size: var(--dle-text-xs);
+}
+
+.dle-health-pill--ok {
+  color: var(--dle-released);
+  border-color: var(--dle-released);
+}
+
+.dle-health-pill--degraded {
+  color: var(--dle-advisory);
+  border-color: var(--dle-advisory);
+}
+
+.dle-health-pill--error {
+  color: var(--dle-error);
+  border-color: var(--dle-error);
+}
+
+.dle-settings-drawer {
+  padding: var(--dle-space-4) var(--dle-space-5);
+  border-bottom: 1px solid var(--dle-border);
+  background-color: var(--dle-surface);
+  box-shadow: var(--dle-shadow-drawer);
+}
+
+.dle-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--dle-space-3);
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.dle-settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dle-space-1);
+  font-size: var(--dle-text-xs);
+  font-weight: var(--dle-weight-strong);
+}
+
+.dle-workspace {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: var(--dle-space-5);
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--dle-space-5);
+}
+
+@media (max-width: 900px) {
+  .dle-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.dle-chat-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dle-space-4);
+  min-width: 0;
+}
+
+.dle-transcript {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--dle-space-3);
+  min-height: 280px;
+}
+
+.dle-empty-state {
+  padding: var(--dle-space-5);
+  border: 1px dashed var(--dle-border);
+  border-radius: var(--dle-radius-md);
+  background-color: var(--dle-surface);
+}
+
+.dle-empty-state h2 {
+  margin: 0 0 var(--dle-space-2);
+  font-size: var(--dle-text-md);
+  font-weight: var(--dle-weight-strong);
+}
+
+.dle-empty-state p {
+  margin: 0;
+  color: var(--dle-text-muted);
+}
+
+.dle-inspector {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dle-space-3);
+  padding: var(--dle-space-4);
+  border: 1px solid var(--dle-border);
+  border-radius: var(--dle-radius-md);
+  background-color: var(--dle-surface);
+  align-self: start;
+}
+
+.dle-inspector h2 {
+  margin: 0;
+  font-size: var(--dle-text-md);
+  font-weight: var(--dle-weight-strong);
+}
+
+.dle-dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--dle-space-2) var(--dle-space-3);
+  font-size: var(--dle-text-xs);
+}
+
+.dle-dl dt {
+  color: var(--dle-text-muted);
+  font-weight: var(--dle-weight-strong);
+}
+
+.dle-dl dd {
+  margin: 0;
+  word-break: break-word;
+}

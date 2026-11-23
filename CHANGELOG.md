@@ -5,6 +5,7 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [Unreleased]
 
 ### Added
+- Phase 1 Wave 1D (`P1-17`–`P1-19`): `ui/` React + Vite + `@google/genai` + Storybook 8.6 browser chat shell (`DLE-STY` light/dark AA tokens, `ReleaseBadge`, `ReceiptChip`, `ChatComposer`, `MessageBubble`, `App.tsx`, `stories.test.tsx`), `tests/gemini_compat/` (`FakeUpstream`, live `uvicorn` fixtures, Python `google-genai` & JS `@google/genai` SDK suites for `GC-01`–`GC-26` P-cases), and `reports/phase1_gate.md` (`p50=0.816 ms`, `p95=1.786 ms`).
 - Phase 1 Wave 1C (`P1-10`–`P1-15`, `P1-20`): `dle/edge/tools.py` (`ToolBridge`), `dle/edge/composer.py` (`ResponseComposer`), `dle/edge/streaming.py` (`stream_governed_sse` keepalives), `dle/host/functions/` (`FunctionRegistry` H16 dispatcher, Phase 1 kernel & fallback handlers), `dle/host/workflow/stub.py` (`run_governed_stub`), full gateway integration, and `dle/host/services/pilot.py` (21-test §18 conformance pilot + 3.8.0 Ed25519 receipts).
 - Phase 1 Wave 1B (`P1-05`–`P1-09`): `UpstreamApiError` and `EgressResponse`, `dle/models/registry.py` (`ModelRegistry` dated pricing & drift latch), `dle/models/port.py`, `GeminiAdapter`, `FakeModel`, `dle/edge/sessions.py` (JCS history-hash session resolver), `dle/edge/translator.py` (`RunRequest`, `DVSS-K01` validation, `GC-26` unknown-field retention), `dle/edge/settings.py` (`GatewaySettings`, loopback guard), `dle/edge/gateway.py` (FastAPI façade serving all `openapi.yaml` routes), and unit tests.
 - Phase 1 Wave 1A (`P1-01`–`P1-04`, `P1-16`): `dle/errors.py`, `dle/observability/` (`structlog` JSON logging with strict redaction and Prometheus metrics), `contracts/functions.schema.json`, `dle/tools/validate_contracts.py`, `dle/config/` (strict Pydantic models, `extends` profile resolution, `KernelNotOptional`, RFC 8785 JCS `policy_sha256`), `dle/models/egress.py` (`EgressClient` allowlist over `httpx`), `dle/tools/check_egress_imports.py`, `uv.lock`, and unit tests.
@@ -13,6 +14,7 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 - `.gitattributes`, `.python-version` (`3.12`), Hatchling build config in `pyproject.toml`, and v3.13 white paper copies under `docs/whitepaper/`.
 
 ### Fixed
+- Updated governed SSE keepalive frame in `dle/edge/streaming.py` to blank-line `KEEPALIVE_FRAME` (`\n\n`) and documented the `google-genai==1.75.0` parser behavior in `docs/adr/004-stream-after-gate.md`.
 - Scoped Ruff format and lint checks in `.github/workflows/ci.yml` to `dle tests`.
 - Flattened nested `dle-middleware/dle-middleware` directory into a single repository root and initialized Git on `main`.
 - Added `pytest-cov` and Windows environment marker for `mutmut` in `pyproject.toml`, raised `.pre-commit-config.yaml` file size ceiling to `2500` KB, and gated Phase 1+ steps in `.github/workflows/ci.yml` so scaffold CI runs green.

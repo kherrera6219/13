@@ -2,6 +2,24 @@
 
 Running record for agents. Newest entry first. Keep each entry short: what changed, what was learned, what is next.
 
+## 2026-11-22 — Phase 1 Complete (Wave 1D: UI Shell, SDK Compat Suite GC-01..26 & Exit Gate P1-19)
+
+**State.** Phase 1 (`G3`/`G4`) complete and verified. All Phase 1 tickets (`P1-01`–`P1-20`) are implemented, tested across both official `google-genai` (Python) and `@google/genai` (JS) SDKs, built into `dle-middleware:phase1` Docker image with live browser UI on `127.0.0.1:8740`, and signed off in `reports/phase1_gate.md`.
+
+**Changed.**
+- `dle/edge/sessions.py`: Added `session_ids()` and `count()` read helpers on `InMemorySessionStore`.
+- `dle/edge/streaming.py` & `docs/adr/004-stream-after-gate.md`: Switched governed SSE keepalive heartbeat to `KEEPALIVE_FRAME` (`"\n\n"`) for compatibility with `google-genai==1.75.0` and `@google/genai==3.6.1`.
+- `P1-18`: Added `ui/` React 18 + Vite + TypeScript + `@google/genai` browser chat & response-header inspector (`tokens.css` WCAG AA light/dark tokens, `ReleaseBadge`, `ReceiptChip`, `ChatComposer`, `MessageBubble`, `App.tsx`, Storybook 8.6 CSF3 stories, `stories.test.tsx`, `package-lock.json`).
+- `P1-17`: Added `tests/gemini_compat/` (`fake_upstream.py`, `conftest.py`, `test_python_sdk.py` with 23 Python SDK tests covering `GC-01`–`GC-11`, `GC-14`–`GC-24`, `GC-26`, plus `js_sdk_compat.mjs` & `test_js_sdk.py` covering 22 JS SDK cases).
+- `P1-19`: Added `reports/phase1_gate.md` recording compatibility results, measured loopback pass-through latency (`p50=0.816 ms`, `p95=1.786 ms`), coverage (`89.49%`), security scan status (`0` Semgrep findings, `0` CVEs), and live container checks.
+- Updated `docs/traceability/rtm.csv` and `CHANGELOG.md`.
+
+**Learned.**
+- `google-genai==1.75.0` `HttpResponse._iter_response_stream` only recognizes blank lines and `data: ` lines, throwing `UnknownApiResponseError` on `: comment` SSE lines; blank-line SSE keepalives (`\n\n`) work seamlessly across both Python and JS SDKs.
+- Putting `from __future__ import annotations` in a file defining Python callables passed to `google-genai` automatic function calling breaks runtime argument schema coercion (`isinstance("str", ...)` `TypeError`); real runtime annotations work cleanly.
+
+**Next.** Execute **Phase 2** (SQLite persistence & append-only triggers for `0001_init.sql`, `H5` evidence service + `gemini-embedding-001`, `M3` ONNX NLI interface + deterministic test scorer, `H10`–`H14` verification & release controller, `H15` Ed25519/Merkle receipts & offline CLI verifier, `E6` admin endpoints, governed `GC-12`/`GC-13`/`GC-25` tests, and Inspector UI panels).
+
 ## 2026-11-22 — Phase 1 Wave 1C: Tool Bridge, Composer, Keepalives, H16, Stub & §18 Pilot (P1-10..P1-15, P1-20)
 
 **State.** Phase 1 Wave 1C complete. Tool bridge, response composer (`STOP` hold notices + `X-DLE-*` headers), governed SSE streaming (`: keepalive`), H16 `FunctionRegistry` skeleton, governed-path stub, and the 21-test §18 conformance pilot on 3.8.0 receipts are implemented and verified.

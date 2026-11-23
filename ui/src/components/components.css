@@ -1,0 +1,204 @@
+/* Component styles strictly using tokens.css custom properties. */
+
+.dle-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dle-space-1);
+  padding: 2px var(--dle-space-2);
+  border-radius: var(--dle-radius-sm);
+  border: 1px solid var(--dle-border);
+  background-color: var(--dle-bg);
+  font-size: var(--dle-text-xs);
+  font-weight: var(--dle-weight-strong);
+  line-height: var(--dle-line-height);
+}
+
+.dle-badge--released {
+  color: var(--dle-released);
+  border-color: var(--dle-released);
+}
+
+.dle-badge--released_advisory {
+  color: var(--dle-advisory);
+  border-color: var(--dle-advisory);
+}
+
+.dle-badge--held {
+  color: var(--dle-held);
+  border-color: var(--dle-held);
+}
+
+.dle-badge--passthrough,
+.dle-badge--tool_call {
+  color: var(--dle-accent);
+  border-color: var(--dle-accent);
+}
+
+.dle-badge--error {
+  color: var(--dle-error);
+  border-color: var(--dle-error);
+}
+
+.dle-receipt {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dle-space-2);
+  padding: 2px var(--dle-space-2);
+  border-radius: var(--dle-radius-sm);
+  border: 1px solid var(--dle-border);
+  background-color: var(--dle-bg);
+  font-size: var(--dle-text-xs);
+  color: var(--dle-text-muted);
+}
+
+.dle-receipt-id {
+  font-family: var(--dle-font-mono);
+  color: var(--dle-text);
+}
+
+.dle-receipt-btn {
+  min-width: var(--dle-touch-min);
+  min-height: var(--dle-touch-min);
+  padding: 0 var(--dle-space-2);
+  border: 1px solid var(--dle-border);
+  border-radius: var(--dle-radius-sm);
+  background-color: var(--dle-surface);
+  color: var(--dle-text);
+  font-family: var(--dle-font-sans);
+  font-size: var(--dle-text-xs);
+  font-weight: var(--dle-weight-strong);
+  cursor: pointer;
+  transition: border-color var(--dle-transition);
+}
+
+.dle-receipt-btn:hover {
+  border-color: var(--dle-accent);
+}
+
+.dle-receipt-feedback {
+  color: var(--dle-released);
+  font-weight: var(--dle-weight-strong);
+}
+
+.dle-bubble {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dle-space-2);
+  padding: var(--dle-space-4);
+  border: 1px solid var(--dle-border);
+  border-radius: var(--dle-radius-md);
+  background-color: var(--dle-surface);
+}
+
+.dle-bubble--user {
+  background-color: var(--dle-bg);
+  margin-left: var(--dle-space-6);
+}
+
+.dle-bubble--held {
+  border-left: 4px solid var(--dle-held);
+}
+
+.dle-bubble--error {
+  border-left: 4px solid var(--dle-error);
+}
+
+.dle-bubble-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--dle-space-2);
+}
+
+.dle-bubble-meta {
+  font-size: var(--dle-text-xs);
+  color: var(--dle-text-muted);
+}
+
+.dle-bubble-body {
+  margin: 0;
+  white-space: pre-wrap;
+  color: var(--dle-text);
+  font-size: var(--dle-text-sm);
+}
+
+.dle-bubble-notice {
+  margin: 0;
+  font-size: var(--dle-text-xs);
+  color: var(--dle-text-muted);
+}
+
+.dle-composer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dle-space-3);
+  padding: var(--dle-space-4);
+  border: 1px solid var(--dle-border);
+  border-radius: var(--dle-radius-md);
+  background-color: var(--dle-surface);
+}
+
+.dle-composer-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dle-space-3);
+}
+
+.dle-composer-field {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dle-space-2);
+  font-size: var(--dle-text-xs);
+  font-weight: var(--dle-weight-strong);
+  color: var(--dle-text);
+}
+
+.dle-select,
+.dle-input,
+.dle-textarea {
+  font-family: var(--dle-font-sans);
+  font-size: var(--dle-text-sm);
+  color: var(--dle-text);
+  background-color: var(--dle-bg);
+  border: 1px solid var(--dle-border);
+  border-radius: var(--dle-radius-sm);
+  padding: var(--dle-space-2);
+}
+
+.dle-select {
+  min-height: 32px;
+}
+
+.dle-textarea {
+  width: 100%;
+  min-height: 76px;
+  resize: vertical;
+  line-height: var(--dle-line-height);
+}
+
+.dle-btn-primary {
+  min-height: 32px;
+  min-width: 84px;
+  padding: var(--dle-space-1) var(--dle-space-4);
+  border: 1px solid var(--dle-accent);
+  border-radius: var(--dle-radius-sm);
+  background-color: var(--dle-accent);
+  color: var(--dle-on-accent);
+  font-family: var(--dle-font-sans);
+  font-size: var(--dle-text-sm);
+  font-weight: var(--dle-weight-strong);
+  cursor: pointer;
+}
+
+.dle-btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.dle-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--dle-accent);
+}

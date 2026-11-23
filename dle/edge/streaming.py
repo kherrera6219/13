@@ -1,8 +1,10 @@
 """SSE streaming with periodic keepalives while governed verification runs.
 
-Implements FR-API-07, NFR-PERF-02, and ADR-004. Streams SSE comment lines
-(``: keepalive``) at least every 10 s while the gate runs, and only emits
-``GenerateContentResponse`` chunks after a release/hold decision is reached.
+Implements FR-API-07, NFR-PERF-02, and ADR-004. Streams blank-line SSE
+heartbeat frames (compatible with both ``google-genai`` Python and
+``@google/genai`` JS SDK SSE parsers) at least every 10 s while the gate runs,
+and only emits ``GenerateContentResponse`` chunks after a release/hold decision
+is reached.
 """
 
 from __future__ import annotations
@@ -16,6 +18,7 @@ from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
 from dle.observability import get_logger
 
 DEFAULT_KEEPALIVE_INTERVAL_S = 8.0
+KEEPALIVE_FRAME = "\n\n"
 
 
 def split_response_chunks(
@@ -95,7 +98,7 @@ async def stream_governed_sse(
         while not task.done():
             await asyncio.wait({task}, timeout=keepalive_interval_s)
             if not task.done():
-                yield ": keepalive\n\n"
+                yield KEEPALIVE_FRAME
         response_body, _headers = task.result()
         for chunk in split_response_chunks(response_body, chunk_size=chunk_size):
             yield f"data: {json.dumps(chunk)}\n\n"
@@ -112,6 +115,7 @@ async def stream_governed_sse(
 
 __all__ = [
     "DEFAULT_KEEPALIVE_INTERVAL_S",
+    "KEEPALIVE_FRAME",
     "split_response_chunks",
     "stream_governed_sse",
 ]

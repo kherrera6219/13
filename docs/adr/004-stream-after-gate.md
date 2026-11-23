@@ -21,3 +21,7 @@ Option 1. SSE comment keepalives at least every 10 s; released text then sent in
 ## Consequences
 
 Tier 3 first-token latency equals full run time. Mitigated by keepalives and tier tuning (blueprint risk table).
+
+## Implementation Note (2026-11-22)
+
+Official `google-genai==1.75.0` (`HttpResponse._iter_response_stream`) parses only blank lines and `data: ` lines, and raises `UnknownApiResponseError` on SSE `:` comment lines (`: keepalive\n\n`). Both `google-genai` (Python) and `@google/genai` (JS) ignore empty SSE heartbeat frames (`\n\n`), so `dle/edge/streaming.py` emits `\n\n` every <= 10 s (`KEEPALIVE_FRAME`) to keep HTTP streams open without tripping either SDK parser.

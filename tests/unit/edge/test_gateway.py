@@ -233,7 +233,8 @@ async def test_governed_stub_fail_closed_sse_keepalives_and_tool_parking():
             json={"contents": [{"role": "user", "parts": [{"text": "streamed governed prompt"}]}]},
         )
         assert gov_sse.status_code == 200
-        assert ": keepalive" in gov_sse.text
+        assert gov_sse.text.startswith("\n\n")
+        assert "\n\ndata: " in gov_sse.text
         gov_chunks = [
             json.loads(line[6:]) for line in gov_sse.text.splitlines() if line.startswith("data: ")
         ]

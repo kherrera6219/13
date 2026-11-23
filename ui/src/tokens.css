@@ -1,0 +1,104 @@
+/* DLE-STY design tokens: single source of colour, typography, spacing, and motion. */
+
+:root,
+[data-theme="light"] {
+  --dle-bg: #FFFFFF;
+  --dle-surface: #F6F8FA;
+  --dle-border: #D0D7DE;
+  --dle-text: #1F2328;
+  --dle-text-muted: #57606A;
+  --dle-accent: #0969DA;
+  --dle-on-accent: #FFFFFF;
+  --dle-released: #1A7F37;
+  --dle-advisory: #9A6700;
+  --dle-held: #57606A;
+  --dle-error: #CF222E;
+  --dle-shadow-drawer: 0 4px 12px rgba(31, 35, 40, 0.12);
+}
+
+[data-theme="dark"] {
+  --dle-bg: #0D1117;
+  --dle-surface: #161B22;
+  --dle-border: #30363D;
+  --dle-text: #E6EDF3;
+  --dle-text-muted: #8B949E;
+  --dle-accent: #58A6FF;
+  --dle-on-accent: #0D1117;
+  --dle-released: #3FB950;
+  --dle-advisory: #D29922;
+  --dle-held: #8B949E;
+  --dle-error: #F85149;
+  --dle-shadow-drawer: 0 4px 12px rgba(1, 4, 9, 0.45);
+}
+
+:root {
+  --dle-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --dle-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+
+  --dle-text-xs: 12px;
+  --dle-text-sm: 14px;
+  --dle-text-md: 16px;
+  --dle-text-lg: 20px;
+  --dle-text-xl: 24px;
+  --dle-line-height: 1.5;
+
+  --dle-weight-body: 400;
+  --dle-weight-strong: 600;
+
+  --dle-space-1: 4px;
+  --dle-space-2: 8px;
+  --dle-space-3: 12px;
+  --dle-space-4: 16px;
+  --dle-space-5: 24px;
+  --dle-space-6: 32px;
+
+  --dle-radius-sm: 4px;
+  --dle-radius-md: 8px;
+  --dle-transition: 150ms ease-out;
+  --dle-touch-min: 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dle-transition: 0ms;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--dle-bg);
+  color: var(--dle-text);
+  font-family: var(--dle-font-sans);
+  font-size: var(--dle-text-sm);
+  line-height: var(--dle-line-height);
+  font-weight: var(--dle-weight-body);
+}
+
+:focus-visible {
+  outline: 2px solid var(--dle-accent);
+  outline-offset: 2px;
+}
+
+.dle-mono {
+  font-family: var(--dle-font-mono);
+}
+
+.dle-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

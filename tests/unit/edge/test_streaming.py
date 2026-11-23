@@ -7,7 +7,7 @@ import json
 
 import pytest
 
-from dle.edge.streaming import split_response_chunks, stream_governed_sse
+from dle.edge.streaming import KEEPALIVE_FRAME, split_response_chunks, stream_governed_sse
 
 
 @pytest.mark.asyncio
@@ -39,7 +39,7 @@ async def test_slow_gate_emits_keepalives_then_chunks_with_final_metadata():
             slow_gate(), keepalive_interval_s=0.02, chunk_size=10
         )
     ]
-    keepalives = [f for f in frames if f == ": keepalive\n\n"]
+    keepalives = [f for f in frames if f == KEEPALIVE_FRAME]
     data_frames = [json.loads(f[6:]) for f in frames if f.startswith("data: ")]
 
     assert len(keepalives) >= 2
@@ -93,6 +93,6 @@ async def test_held_gate_emits_stop_hold_notice_and_handles_cancel():
         stalled_gate(), keepalive_interval_s=0.02, on_cancel=mark_cancelled
     )
     first = await anext(stream)
-    assert first == ": keepalive\n\n"
+    assert first == KEEPALIVE_FRAME
     await stream.aclose()
     assert cancelled is True
