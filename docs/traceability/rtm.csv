@@ -31,3 +31,7 @@ IR-01..07,"dle/tools/validate_contracts.py,contracts/functions.schema.json",T-UN
 FR-FN-03,"dle/config/",T-UNIT-CFG-01..05,1,implemented
 NFR-SEC-03,"dle/models/egress.py,dle/tools/check_egress_imports.py",T-UNIT-SEC-01..06,1,implemented
 NFR-PRIV-01;NFR-OBS-01,"dle/observability/",T-UNIT-OBS-01..05,1,implemented
+FR-API-03;NFR-REL-02,"dle/models/port.py,dle/models/gemini.py,dle/models/fake.py",T-UNIT-MODEL-01..03,1,implemented
+NFR-COST-01;FR-REL-04,"dle/models/registry.py",T-UNIT-MODEL-04..06,1,implemented
+FR-SES-01..03,"dle/edge/sessions.py",T-UNIT-SES-01..05,1,implemented
+FR-API-01..02;NFR-SEC-01..02;DVSS-K01,"dle/edge/translator.py,dle/edge/settings.py,dle/edge/gateway.py",T-UNIT-EDGE-01..09,1,implemented

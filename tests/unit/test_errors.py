@@ -16,6 +16,7 @@ from dle.errors import (
     SessionError,
     UnboundFunction,
     UnsafeBindError,
+    UpstreamApiError,
 )
 
 ALL_ERROR_CLASSES = [
@@ -30,6 +31,7 @@ ALL_ERROR_CLASSES = [
     IllegalHoldError,
     SessionError,
     ModelUnavailable,
+    UpstreamApiError,
 ]
 
 

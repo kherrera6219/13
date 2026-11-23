@@ -131,6 +131,31 @@ class ModelUnavailable(DleError):
     default_code: ClassVar[str] = "DLE-E1301"
 
 
+class UpstreamApiError(DleError):
+    """Non-retryable upstream HTTP/API error from Gemini (`DLE-E1302`, FR-API-03)."""
+
+    default_code: ClassVar[str] = "DLE-E1302"
+
+    def __init__(
+        self,
+        http_status: int,
+        message: str,
+        *,
+        gemini_status: str = "INTERNAL",
+        payload: Mapping[str, Any] | None = None,
+        code: str | None = None,
+    ) -> None:
+        """Initialize with upstream HTTP status, Gemini status string, and error payload."""
+        self.http_status: int = http_status
+        self.gemini_status: str = gemini_status
+        self.payload: dict[str, Any] = dict(payload) if payload is not None else {}
+        super().__init__(
+            message,
+            code=code,
+            details={"http_status": http_status, "gemini_status": gemini_status},
+        )
+
+
 __all__ = [
     "AuthError",
     "ConfigError",
@@ -143,4 +168,5 @@ __all__ = [
     "SessionError",
     "UnboundFunction",
     "UnsafeBindError",
+    "UpstreamApiError",
 ]

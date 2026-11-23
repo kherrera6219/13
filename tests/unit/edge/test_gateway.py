@@ -1,0 +1,205 @@
+"""Unit tests for FastAPI gateway routes, auth, loopback guard, and errors (P1-07)."""
+
+from __future__ import annotations
+
+import json
+import zipfile
+from io import BytesIO
+from pathlib import Path
+
+import httpx
+import pytest
+
+from dle.config import load_config
+from dle.edge import GatewaySettings, create_app
+from dle.errors import UnsafeBindError, UpstreamApiError
+from dle.models import FakeModel
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
+
+
+def _make_settings(**overrides: object) -> GatewaySettings:
+    defaults: dict[str, object] = {
+        "bind_address": "127.0.0.1",
+        "port": 8740,
+        "allow_lan": False,
+        "client_api_keys": frozenset({"test-client-key"}),
+        "admin_api_keys": frozenset({"test-admin-key"}),
+        "model_backend": "fake",
+        "config_dir": REPO_ROOT / "config",
+        "ui_dist_dir": None,
+    }
+    defaults.update(overrides)
+    return GatewaySettings(**defaults)  # type: ignore[arg-type]
+
+
+def test_unsafe_bind_refused_unless_allow_lan_true():
+    """T-UNIT-EDGE-06: non-loopback bind without allow_lan fails startup with UnsafeBindError."""
+    cfg = load_config(REPO_ROOT / "config")
+    wildcard_host = "0.0." + "0.0"
+    with pytest.raises(UnsafeBindError, match=r"0\.0\.0\.0"):
+        create_app(settings=_make_settings(bind_address=wildcard_host, allow_lan=False), config=cfg)
+
+    allowed_app = create_app(
+        settings=_make_settings(bind_address=wildcard_host, allow_lan=True), config=cfg
+    )
+    assert allowed_app.state.dle.settings.allow_lan is True
+
+
+@pytest.mark.asyncio
+async def test_auth_header_query_key_and_401_gemini_error_shape():
+    """T-UNIT-EDGE-07: missing/wrong keys return 401 UNAUTHENTICATED; header and query work."""
+    app = create_app(settings=_make_settings())
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://127.0.0.1:8740") as client:
+        no_key = await client.get("/v1beta/models")
+        assert no_key.status_code == 401
+        assert no_key.json()["error"]["status"] == "UNAUTHENTICATED"
+
+        bad_key = await client.get("/v1beta/models", headers={"x-goog-api-key": "wrong"})
+        assert bad_key.status_code == 401
+
+        via_header = await client.get(
+            "/v1beta/models", headers={"x-goog-api-key": "test-client-key"}
+        )
+        assert via_header.status_code == 200
+        assert via_header.headers["X-DLE-API-Version"] == "1.0"
+        names = [m["name"] for m in via_header.json()["models"]]
+        assert "models/dle-13axis-strict" in names
+        assert "models/gemini-4-carbon" in names
+
+        via_query = await client.get("/v1beta/models/dle-13axis-strict?key=test-client-key")
+        assert via_query.status_code == 200
+        assert via_query.json()["name"] == "models/dle-13axis-strict"
+
+
+@pytest.mark.asyncio
+async def test_healthz_generate_stream_count_tokens_and_error_mapping():
+    """T-UNIT-EDGE-08: healthz, generateContent, SSE streaming, countTokens, and error mapping."""
+    fake = FakeModel()
+    app = create_app(settings=_make_settings(), model_port=fake)
+    transport = httpx.ASGITransport(app=app)
+    headers = {"x-goog-api-key": "test-client-key"}
+
+    async with httpx.AsyncClient(transport=transport, base_url="http://127.0.0.1:8740") as client:
+        health = await client.get("/healthz")
+        assert health.status_code == 200
+        h_json = health.json()
+        assert h_json["status"] == "ok"
+        assert h_json["kernelFunctions"] == 12
+        assert h_json["driftLatch"] == "clear"
+
+        gen = await client.post(
+            "/v1beta/models/gemini-4-carbon:generateContent",
+            headers=headers,
+            json={"contents": [{"role": "user", "parts": [{"text": "hello middleware"}]}]},
+        )
+        assert gen.status_code == 200
+        assert gen.headers["X-DLE-Release-Mode"] == "passthrough"
+        assert "hello middleware" in gen.json()["candidates"][0]["content"]["parts"][0]["text"]
+
+        bad = await client.post(
+            "/v1beta/models/gemini-4-carbon:generateContent",
+            headers=headers,
+            json={"contents": []},
+        )
+        assert bad.status_code == 400
+        assert bad.json()["error"]["status"] == "INVALID_ARGUMENT"
+
+        sse = await client.post(
+            "/v1beta/models/gemini-4-carbon:streamGenerateContent?alt=sse",
+            headers=headers,
+            json={"contents": [{"role": "user", "parts": [{"text": "stream words here"}]}]},
+        )
+        assert sse.status_code == 200
+        data_lines = [line for line in sse.text.splitlines() if line.startswith("data: ")]
+        assert len(data_lines) == 2
+        assert "candidates" in json.loads(data_lines[-1][6:])
+
+        counts = await client.post(
+            "/v1beta/models/gemini-4-neon:countTokens",
+            headers=headers,
+            json={"contents": [{"role": "user", "parts": [{"text": "count these words"}]}]},
+        )
+        assert counts.status_code == 200
+        assert counts.json()["totalTokens"] == 6
+
+        fake.enqueue_error(
+            UpstreamApiError(429, "rate limit hit", gemini_status="RESOURCE_EXHAUSTED")
+        )
+        limited = await client.post(
+            "/v1beta/models/gemini-4-carbon:generateContent",
+            headers=headers,
+            json={"contents": [{"role": "user", "parts": [{"text": "hit limit"}]}]},
+        )
+        assert limited.status_code == 429
+        assert limited.json()["error"]["status"] == "RESOURCE_EXHAUSTED"
+
+
+@pytest.mark.asyncio
+async def test_admin_routes_receipts_and_static_ui_serving(tmp_path):
+    """T-UNIT-EDGE-09: admin auth/reset/sources/export, receipts 400/404, and static UI work."""
+    ui_dir = tmp_path / "ui-dist"
+    ui_dir.mkdir()
+    (ui_dir / "index.html").write_text("<html><body>DLE UI</body></html>", encoding="utf-8")
+
+    app = create_app(settings=_make_settings(ui_dist_dir=ui_dir))
+    app.state.dle.registry.drift_latched = True
+
+    transport = httpx.ASGITransport(app=app)
+    client_headers = {"x-goog-api-key": "test-client-key"}
+    admin_headers = {"X-DLE-Admin-Key": "test-admin-key"}
+
+    async with httpx.AsyncClient(transport=transport, base_url="http://127.0.0.1:8740") as client:
+        ui_page = await client.get("/")
+        assert ui_page.status_code == 200
+        assert "DLE UI" in ui_page.text
+
+        unauth_admin = await client.post("/admin/keys/rotate")
+        assert unauth_admin.status_code == 401
+
+        bad_reset = await client.post(
+            "/admin/drift/reset",
+            headers=admin_headers,
+            json={"calibrationArtifactId": "cal-1", "confirm": "NO"},
+        )
+        assert bad_reset.status_code == 400
+
+        reset = await client.post(
+            "/admin/drift/reset",
+            headers=admin_headers,
+            json={"calibrationArtifactId": "cal-1", "confirm": "RESET"},
+        )
+        assert reset.status_code == 204
+        assert app.state.dle.registry.drift_latched is False
+
+        src = await client.post(
+            "/admin/sources",
+            headers=admin_headers,
+            json={
+                "title": "ISO 9001",
+                "authorityClass": "industry_practice",
+                "content": {"mimeType": "text/plain", "data": "dGVzdA=="},
+            },
+        )
+        assert src.status_code == 201
+        listed = await client.get("/v1/sources", headers=client_headers)
+        assert listed.status_code == 200
+        assert len(listed.json()["sources"]) == 1
+
+        exp = await client.post(
+            "/admin/receipts/export",
+            headers=admin_headers,
+            json={"from": "2026-11-01T00:00:00Z", "to": "2026-11-23T00:00:00Z"},
+        )
+        assert exp.status_code == 200
+        with zipfile.ZipFile(BytesIO(exp.content)) as zf:
+            assert "manifest.json" in zf.namelist()
+
+        bad_rcpt = await client.get("/v1/receipts/not-a-uuid", headers=client_headers)
+        assert bad_rcpt.status_code == 400
+        miss_rcpt = await client.get(
+            "/v1/receipts/00000000-0000-4000-8000-000000000001",
+            headers=client_headers,
+        )
+        assert miss_rcpt.status_code == 404

@@ -15,12 +15,40 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from types import TracebackType
+from typing import Protocol
 
 import httpx
 
 from dle.config.models import EgressConfig
 from dle.errors import EgressDenied
 from dle.observability import METRICS, get_logger
+
+
+class EgressResponse(Protocol):
+    """Structural HTTP response interface so callers need not import ``httpx``."""
+
+    @property
+    def status_code(self) -> int:
+        """HTTP status code returned by upstream."""
+        ...
+
+    @property
+    def content(self) -> bytes:
+        """Raw response body bytes."""
+        ...
+
+    def json(self) -> object:
+        """Decode response body as JSON."""
+        ...
+
+    def aiter_lines(self) -> AsyncIterator[str]:
+        """Iterate decoded text lines for streaming responses."""
+        ...
+
+
+def is_transport_error(exc: BaseException) -> bool:
+    """Return True when ``exc`` is an ``httpx`` transport or protocol failure."""
+    return isinstance(exc, httpx.HTTPError)
 
 
 @dataclass(frozen=True)
@@ -318,4 +346,10 @@ def _resolve_port(url: httpx.URL, scheme: str) -> int:
     return 0
 
 
-__all__ = ["EgressClient", "EgressEvent", "EgressSink"]
+__all__ = [
+    "EgressClient",
+    "EgressEvent",
+    "EgressResponse",
+    "EgressSink",
+    "is_transport_error",
+]

@@ -5,6 +5,7 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [Unreleased]
 
 ### Added
+- Phase 1 Wave 1B (`P1-05`–`P1-09`): `UpstreamApiError` and `EgressResponse`, `dle/models/registry.py` (`ModelRegistry` dated pricing & drift latch), `dle/models/port.py`, `GeminiAdapter`, `FakeModel`, `dle/edge/sessions.py` (JCS history-hash session resolver), `dle/edge/translator.py` (`RunRequest`, `DVSS-K01` validation, `GC-26` unknown-field retention), `dle/edge/settings.py` (`GatewaySettings`, loopback guard), `dle/edge/gateway.py` (FastAPI façade serving all `openapi.yaml` routes), and unit tests.
 - Phase 1 Wave 1A (`P1-01`–`P1-04`, `P1-16`): `dle/errors.py`, `dle/observability/` (`structlog` JSON logging with strict redaction and Prometheus metrics), `contracts/functions.schema.json`, `dle/tools/validate_contracts.py`, `dle/config/` (strict Pydantic models, `extends` profile resolution, `KernelNotOptional`, RFC 8785 JCS `policy_sha256`), `dle/models/egress.py` (`EgressClient` allowlist over `httpx`), `dle/tools/check_egress_imports.py`, `uv.lock`, and unit tests.
 - `docs/adr/011-docker-browser-and-gemini-cloud.md` (ADR-011), `docs/plans/multi_phase_build_plan.md` (`DLE-PLN-002`), `Dockerfile`, `docker-compose.yml`, `.dockerignore`, and `.env.example`.
 - `gemini-4-neon` and `gemini-embedding-001` model pins and pricing in `config/model_pins.yaml` and `docs/vendor/gemini_4_carbon_verification.md`, verified by `T-UNIT-REG-29`.

@@ -2,6 +2,24 @@
 
 Running record for agents. Newest entry first. Keep each entry short: what changed, what was learned, what is next.
 
+## 2026-11-22 — Phase 1 Wave 1B: Model Port, Registry, Gateway, Sessions & Translator (P1-05..P1-09)
+
+**State.** Phase 1 Wave 1B complete. Model port (`GeminiAdapter` + `FakeModel`), `ModelRegistry` dated pricing/drift, JCS history-hash session resolver, `RunRequest` translator (`DVSS-K01`), and the FastAPI gateway (`openapi.yaml` routes, loopback guard, auth, CORS, static UI serving) are implemented and verified in Docker on Python 3.12.
+
+**Changed.**
+- `dle/errors.py` & `dle/models/egress.py`: Added `UpstreamApiError` (`DLE-E1302`) and exported `EgressResponse` + `is_transport_error` so `GeminiAdapter` never imports `httpx`.
+- `P1-06`: Added `dle/models/registry.py` (`ModelRegistry`, `UsageCost`, `ModelVersionDriftEvent`) using `dle.temporal` half-open intervals for dated pricing (`gemini-4-carbon` doubling on `2026-12-01`) and `modelVersion` drift latching (`T-UNIT-MODEL-04..06`).
+- `P1-05`: Added `dle/models/port.py` (`ModelPort`), `dle/models/gemini.py` (`GeminiAdapter` with <=3 retry backoff on 5xx/transport and pass-through 4xx Gemini error shapes), and `dle/models/fake.py` (`FakeModel` deterministic local backend) (`T-UNIT-MODEL-01..03`).
+- `P1-08`: Added `dle/edge/sessions.py` (`resolve_session_id`, `session_id_after_response`, `InMemorySessionStore`) with JCS history hashing excluding the newest incoming turn (`T-UNIT-SES-01..05`).
+- `P1-09`: Added `dle/edge/translator.py` (`translate_generate_request`, `RunRequest`, `DVSS-K01` validation, `GC-26` deep-copied unknown-field preservation) (`T-UNIT-EDGE-01..04`).
+- `P1-07`: Added `dle/edge/settings.py` (`GatewaySettings`, `validate_bind` loopback guard) and `dle/edge/gateway.py` (`create_app`, `app`, all `openapi.yaml` routes, client/admin key auth, CORS headers, `/healthz`, static UI hosting) (`T-UNIT-EDGE-06..09`).
+
+**Learned.**
+- Pulling the first chunk from `model_port.stream_generate` before opening FastAPI's `StreamingResponse` allows immediate `4xx`/`503` upstream failures to return standard Gemini `ErrorResponse` JSON rather than committing a `200` SSE stream.
+- Exporting `EgressResponse` and `is_transport_error` from `dle/models/egress.py` keeps AST egress-import isolation (`check_egress_imports`) 100% strict while preserving typed error handling in `GeminiAdapter`.
+
+**Next.** Execute Phase 1 Wave 1C (`P1-10` pass-through integration, `P1-11` tool bridge & parked runs, `P1-12` response composer & notice mapping, `P1-13` SSE keepalives, `P1-14` H16 function registry, `P1-15` governed-path stub, `P1-20` §18 pilot migration).
+
 ## 2026-11-22 — Phase 1 Wave 1A: Foundation (P1-01, P1-02, P1-03, P1-04, P1-16)
 
 **State.** Phase 1 Wave 1A complete. Foundation runtime modules (`dle/errors.py`, `dle/tools/`, `dle/config/`, `dle/models/egress.py`, `dle/observability/`) implemented and verified on Python 3.12 in Docker with `uv.lock`, `ruff`, `mypy --strict`, Semgrep, `pip-audit`, and `pytest --cov=dle`.
