@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/p01.out.json",
+  "title": "DVSS_P01_Output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["jurisdiction_state", "ordered_arms", "excluded_arms", "review_items"],
+  "properties": {
+    "jurisdiction_state": {
+      "type": "string",
+      "enum": ["specified", "unknown", "unscoped"]
+    },
+    "ordered_arms": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["arm_id", "authority", "nexus_kind", "rank", "relation", "citation", "jurisdiction"],
+        "properties": {
+          "arm_id": { "type": "string" },
+          "authority": { "type": "string" },
+          "nexus_kind": { "type": "string" },
+          "rank": { "type": "integer", "minimum": 1 },
+          "relation": { "type": "string" },
+          "citation": { "type": "string" },
+          "jurisdiction": { "type": "string" }
+        }
+      }
+    },
+    "excluded_arms": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["arm_id", "reason"],
+        "properties": {
+          "arm_id": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "review_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["reason", "arm_ids"],
+        "properties": {
+          "reason": { "type": "string" },
+          "arm_ids": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

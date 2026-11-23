@@ -823,9 +823,213 @@ class OpsRepository:
             self._conn.commit()
 
 
+class RegistryRepository:
+    """Repository for ``registry.db`` releases, axis atoms, spine edges, and crosswalks."""
+
+    def __init__(self, conn: sqlite3.Connection) -> None:
+        """Bind repository to migrated ``registry`` SQLite connection."""
+        self._conn = conn
+        self._lock = threading.RLock()
+
+    def publish_release(
+        self,
+        *,
+        release_id: str,
+        manifest_sha256: str,
+        created_utc: str,
+        approved_by: str,
+        atoms: Sequence[dict[str, object]],
+        spine_edges: Sequence[dict[str, object]],
+        crosswalks: Sequence[dict[str, object]],
+        activate: bool = True,
+    ) -> dict[str, object]:
+        """Persist a registry release snapshot and atomically activate it if requested."""
+        with self._lock:
+            if activate:
+                self._conn.execute("UPDATE registry_releases SET is_active = 0 WHERE is_active = 1")
+            self._conn.execute(
+                """
+                INSERT INTO registry_releases (
+                    release_id, manifest_sha256, created_utc, approved_by, is_active
+                ) VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    release_id,
+                    manifest_sha256,
+                    created_utc,
+                    approved_by,
+                    1 if activate else 0,
+                ),
+            )
+            for atom in atoms:
+                self._conn.execute(
+                    """
+                    INSERT INTO axis_atoms (
+                        release_id, axis_id, canonical_str, meta_tag, label, status, alias_of
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        release_id,
+                        int(str(atom["axis_id"])),
+                        str(atom["canonical_str"]),
+                        str(atom["meta_tag"]),
+                        str(atom["label"]),
+                        str(atom.get("status", "active")),
+                        str(atom["alias_of"]) if atom.get("alias_of") is not None else None,
+                    ),
+                )
+            for edge in spine_edges:
+                self._conn.execute(
+                    """
+                    INSERT INTO spine_edges (release_id, src, dst, edge_type, weight)
+                    VALUES (?, ?, ?, ?, ?)
+                    """,
+                    (
+                        release_id,
+                        str(edge["src"]),
+                        str(edge["dst"]),
+                        str(edge["edge_type"]),
+                        float(str(edge.get("weight", 1.0))),
+                    ),
+                )
+            for cw in crosswalks:
+                self._conn.execute(
+                    """
+                    INSERT INTO crosswalks (release_id, axis_id, from_atom, to_atom, relation)
+                    VALUES (?, ?, ?, ?, ?)
+                    """,
+                    (
+                        release_id,
+                        int(str(cw["axis_id"])),
+                        str(cw["from_atom"]),
+                        str(cw["to_atom"]),
+                        str(cw["relation"]),
+                    ),
+                )
+            self._conn.commit()
+        return {
+            "release_id": release_id,
+            "manifest_sha256": manifest_sha256,
+            "created_utc": created_utc,
+            "approved_by": approved_by,
+            "is_active": activate,
+            "atom_count": len(atoms),
+            "edge_count": len(spine_edges),
+            "crosswalk_count": len(crosswalks),
+        }
+
+    def get_active_release(self) -> dict[str, object] | None:
+        """Return the currently active registry release row if published."""
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT * FROM registry_releases WHERE is_active = 1 LIMIT 1"
+            ).fetchone()
+            if row is None:
+                return None
+            out = dict(row)
+            out["is_active"] = bool(out["is_active"])
+            return out
+
+    def get_release(self, release_id: str) -> dict[str, object] | None:
+        """Fetch a registry release descriptor by ``release_id``."""
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT * FROM registry_releases WHERE release_id = ?",
+                (release_id,),
+            ).fetchone()
+            if row is None:
+                return None
+            out = dict(row)
+            out["is_active"] = bool(out["is_active"])
+            return out
+
+    def list_atoms(
+        self,
+        release_id: str,
+        *,
+        axis_id: int | None = None,
+        active_only: bool = False,
+    ) -> list[dict[str, object]]:
+        """List axis atoms belonging to ``release_id`` ordered canonically."""
+        with self._lock:
+            if axis_id is not None and active_only:
+                rows = self._conn.execute(
+                    """
+                    SELECT * FROM axis_atoms
+                    WHERE release_id = ? AND axis_id = ? AND status = 'active'
+                    ORDER BY axis_id, canonical_str
+                    """,
+                    (release_id, axis_id),
+                ).fetchall()
+            elif axis_id is not None:
+                rows = self._conn.execute(
+                    """
+                    SELECT * FROM axis_atoms
+                    WHERE release_id = ? AND axis_id = ?
+                    ORDER BY axis_id, canonical_str
+                    """,
+                    (release_id, axis_id),
+                ).fetchall()
+            elif active_only:
+                rows = self._conn.execute(
+                    """
+                    SELECT * FROM axis_atoms
+                    WHERE release_id = ? AND status = 'active'
+                    ORDER BY axis_id, canonical_str
+                    """,
+                    (release_id,),
+                ).fetchall()
+            else:
+                rows = self._conn.execute(
+                    """
+                    SELECT * FROM axis_atoms
+                    WHERE release_id = ?
+                    ORDER BY axis_id, canonical_str
+                    """,
+                    (release_id,),
+                ).fetchall()
+            return [dict(r) for r in rows]
+
+    def list_spine_edges(self, release_id: str) -> list[dict[str, object]]:
+        """List all spine edges for ``release_id``."""
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT * FROM spine_edges WHERE release_id = ? ORDER BY src, dst, edge_type",
+                (release_id,),
+            ).fetchall()
+            return [dict(r) for r in rows]
+
+    def list_crosswalks(
+        self,
+        release_id: str,
+        *,
+        axis_id: int | None = None,
+    ) -> list[dict[str, object]]:
+        """List crosswalk records for ``release_id``."""
+        with self._lock:
+            if axis_id is not None:
+                rows = self._conn.execute(
+                    """
+                    SELECT * FROM crosswalks WHERE release_id = ? AND axis_id = ?
+                    ORDER BY axis_id, from_atom, to_atom
+                    """,
+                    (release_id, axis_id),
+                ).fetchall()
+            else:
+                rows = self._conn.execute(
+                    """
+                    SELECT * FROM crosswalks WHERE release_id = ?
+                    ORDER BY axis_id, from_atom, to_atom
+                    """,
+                    (release_id,),
+                ).fetchall()
+            return [dict(r) for r in rows]
+
+
 __all__ = [
     "EvidenceRepository",
     "OpsRepository",
     "ReceiptRepository",
+    "RegistryRepository",
     "SessionRepository",
 ]

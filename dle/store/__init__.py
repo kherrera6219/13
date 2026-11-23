@@ -14,6 +14,7 @@ from dle.store.repositories import (
     EvidenceRepository,
     OpsRepository,
     ReceiptRepository,
+    RegistryRepository,
     SessionRepository,
 )
 
@@ -23,6 +24,7 @@ __all__ = [
     "EvidenceRepository",
     "OpsRepository",
     "ReceiptRepository",
+    "RegistryRepository",
     "SessionRepository",
     "StoreBundle",
     "apply_migrations",

@@ -1,0 +1,4 @@
+{"node_id": "[NODE:5.41]", "kind": "record", "label": "Candidate A access point", "anchors": ["[PL:1.27.0.0]", "[BR:4.1.27.1.1]"], "status": "verified", "owner": "warehouse-pilot-owner", "valid_from": "2026-01-01"}
+{"node_id": "[NODE:5.42]", "kind": "record", "label": "Candidate B access point", "anchors": ["[PL:1.27.0.0]", "[BR:4.1.27.1.1]"], "status": "verified", "owner": "warehouse-pilot-owner", "valid_from": "2026-01-01"}
+{"node_id": "[NODE:5.43]", "kind": "record", "label": "North warehouse switch bank 4", "anchors": ["[PL:1.27.0.0]", "[BR:4.2.8.493.4931]"], "status": "verified", "owner": "warehouse-pilot-owner", "valid_from": "2026-01-01"}
+{"node_id": "[NODE:5.44]", "kind": "intersection", "label": "Candidate B power feasibility on bank 4", "anchors": ["[PL:1.27.0.0]", "[PL:1.28.0.0]", "[BR:4.1.27.1.1]"], "via_links": ["[LINK:3.17]"], "status": "verified", "owner": "warehouse-pilot-owner", "valid_from": "2026-01-01"}

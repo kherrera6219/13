@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/k06.in.json",
+  "title": "DVSS_K06_Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["as_of", "intervals"],
+  "properties": {
+    "as_of": { "type": "string", "format": "date" },
+    "intervals": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "query_scopes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["scope", "start"],
+        "properties": {
+          "scope": { "type": "string", "minLength": 1 },
+          "start": { "type": "string", "format": "date" },
+          "end": { "type": ["string", "null"], "format": "date" }
+        }
+      }
+    }
+  }
+}

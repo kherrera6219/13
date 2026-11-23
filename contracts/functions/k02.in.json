@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/k02.in.json",
+  "title": "DVSS_K02_Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["proposed_anchors", "registry_manifest_sha256", "as_of"],
+  "properties": {
+    "proposed_anchors": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "registry_manifest_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "as_of": {
+      "type": "string",
+      "format": "date"
+    },
+    "binding_claim": { "type": "boolean" },
+    "session_uuid": { "type": ["string", "null"] }
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/k06.out.json",
+  "title": "DVSS_K06_Output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["applicable", "excluded", "conflicts"],
+  "properties": {
+    "applicable": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["interval_id", "subject", "kind", "claim_scope", "start", "end", "matched_scopes"],
+        "properties": {
+          "interval_id": { "type": ["string", "null"] },
+          "subject": { "type": "string" },
+          "kind": { "type": "string" },
+          "claim_scope": { "type": "string" },
+          "start": { "type": "string", "format": "date" },
+          "end": { "type": ["string", "null"], "format": "date" },
+          "matched_scopes": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "excluded": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["subject", "scope", "reason"],
+        "properties": {
+          "interval_id": { "type": ["string", "null"] },
+          "subject": { "type": "string" },
+          "scope": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["subject", "kind", "interval_ids", "reason"],
+        "properties": {
+          "subject": { "type": "string" },
+          "kind": { "type": "string" },
+          "interval_ids": { "type": "array", "items": { "type": "string" } },
+          "reason": { "type": "string" }
+        }
+      }
+    }
+  }
+}

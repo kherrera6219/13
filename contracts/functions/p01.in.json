@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/p01.in.json",
+  "title": "DVSS_P01_Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["as_of", "hub_arms"],
+  "properties": {
+    "as_of": { "type": "string", "format": "date" },
+    "jurisdiction_record": { "type": ["object", "null"] },
+    "hub_arms": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "binding_claim": { "type": "boolean" }
+  }
+}

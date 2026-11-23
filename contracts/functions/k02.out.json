@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/k02.out.json",
+  "title": "DVSS_K02_Output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["coordinate", "uncertain_matches", "active_axes", "activated_roles"],
+  "properties": {
+    "coordinate": { "type": "object" },
+    "uncertain_matches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["raw_atom", "reason"],
+        "properties": {
+          "raw_atom": { "type": "string" },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "active_axes": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 1, "maximum": 13 }
+    },
+    "activated_roles": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["scholar", "practitioner", "regulator", "harmonizer"]
+      }
+    },
+    "open_dependencies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["axis_id", "slot", "reason"],
+        "properties": {
+          "axis_id": { "type": "integer", "minimum": 1, "maximum": 13 },
+          "slot": { "type": "string" },
+          "reason": { "type": "string" },
+          "subject": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}

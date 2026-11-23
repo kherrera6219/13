@@ -2,6 +2,19 @@
 
 Running record for agents. Newest entry first. Keep each entry short: what changed, what was learned, what is next.
 
+## 2026-11-22 — Phase 3 Wave 3A: 13-Axis Registry Loader, Release CLI, Warehouse Pilot & Coordinate Engine (H3, O2, H4)
+
+**State.** Phase 3 Wave 3A complete. Persistent `RegistryRepository` (`registry.db`), `H3` 13-axis registry loader (`load_registry` with alias rewriting, retired exclusion, fixture rejection outside tests, spine/crosswalk graph construction, and JCS manifest SHA-256), `O2` offline release CLI (`dle.tools.registry_release` / `offline/registry_release.py`), `D4` verified Warehouse Substitution pilot corpus (`config/pilots/warehouse_substitution/`), and `H4` (`DVSS-K02` Nuremberg/TMP coordinate parser, `DVSS-K06` temporal interval applicability & conflict checker via `dle.temporal`, `DVSS-P01` Axis 12 jurisdiction precedence ordering) plus paired function contracts (`k02`, `k06`, `p01`) are implemented and verified.
+
+**Changed.**
+- `dle/store/repositories.py` & `dle/store/__init__.py`: Added `RegistryRepository` (`publish_release`, `get_active_release`, `get_release`, `list_atoms`, `list_spine_edges`, `list_crosswalks`) honoring `ux_registry_releases_active`.
+- `config/pilots/warehouse_substitution/*.jsonl`: Seeded `D4` verified warehouse substitution pilot corpus across Axes 3–7, 12–13 without modifying `tests/fixtures/` or putting fixture records in `config/registry/`.
+- `dle/host/services/registry.py` (`H3`), `dle/tools/registry_release.py`, `offline/registry_release.py` (`O2`): Implemented strict Draft 2020-12 JSONL + Axis 1/2 CSV loader, Axis 1 alias rewriter (`PL101`->`PL020`), `w3`/`w67` weighted spine builder, and SQLite release publisher CLI.
+- `dle/host/services/coordinate.py` (`H4`) & `contracts/functions/{k02,k06,p01}.{in,out}.json`: Implemented `parse_atom`, `parse_coordinate` (`3.7.1`), `propose_anchors_from_query`, `evaluate_temporal_applicability`, and `resolve_jurisdiction_precedence`.
+- Added `tests/unit/host/services/test_registry_and_coordinate.py`; updated `docs/traceability/rtm.csv` and `CHANGELOG.md`.
+
+**Next.** Execute **Phase 3 Wave 3B** (`H6` deterministic bounded PPR graph expansion `DVSS-K07` / `DVSS-K03`, `H7` per-session `USKD` overlay `[TMP:5.TMP.<uuid>]` depth `<= 7` + `DVSS-P03`/`P06`, wire 13-axis/PPR path into `governed.py` & `gateway.py`, add 13-Axis Address & Evidence Graph Browser UI drawer + Storybook stories, publish `reports/phase3_gate.md`).
+
 ## 2026-11-22 — Phase 2 Complete (Wave 2C: Gateway Wiring, Governed Compat GC-12/13/25, Inspector UI & Gate Report)
 
 **State.** Phase 2 (`FR-API-04..08`, `FR-VER-01..03`, `FR-REL-01..04`, `FR-RCPT-01..03`, `FR-UI-01..02`) is complete and cleared via `reports/phase2_gate.md` (`dle-middleware:phase2`). Full Phase 2 verify-and-gate execution replaces the Phase 1 stub across `dle/edge/gateway.py`, backed by persistent 5-DB SQLite + `sqlite-vec` stores, Ed25519/WORM Merkle 3.8.0 receipts, governed Python + JS Gemini SDK compatibility (`GC-12`/`13`/`25`), and the Browser Inspector UI (`CitationList`, `ClaimsTable`, `ReceiptViewer`, `SourceRegistryTable`).
