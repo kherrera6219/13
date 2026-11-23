@@ -72,6 +72,8 @@ class GatewaySettings:
     keys_dir: Path | None = None
     nli_model_path: Path | None = None
     nli_sha256: str | None = None
+    registry_overlay_dir: Path | None = None
+    enable_ppr: bool = True
     keepalive_interval_s: float = 8.0
     cors_origins: tuple[str, ...] = (
         "http://127.0.0.1:8740",
@@ -132,6 +134,17 @@ class GatewaySettings:
         nli_model_path = Path(raw_nli_path) if raw_nli_path else None
         nli_sha256 = os.getenv("DLE_NLI_SHA256") or None
 
+        raw_overlay = os.getenv("DLE_REGISTRY_OVERLAY_DIR")
+        default_pilot_overlay = config_dir / "pilots" / "warehouse_substitution"
+        registry_overlay_dir: Path | None
+        if raw_overlay:
+            registry_overlay_dir = Path(raw_overlay)
+        elif default_pilot_overlay.is_dir():
+            registry_overlay_dir = default_pilot_overlay
+        else:
+            registry_overlay_dir = None
+        enable_ppr = _parse_bool_env(os.getenv("DLE_ENABLE_PPR"), default=True)
+
         raw_cors = os.getenv("DLE_CORS_ORIGINS")
         if raw_cors:
             cors_origins = tuple(origin.strip() for origin in raw_cors.split(",") if origin.strip())
@@ -170,6 +183,8 @@ class GatewaySettings:
             keys_dir=keys_dir,
             nli_model_path=nli_model_path,
             nli_sha256=nli_sha256,
+            registry_overlay_dir=registry_overlay_dir,
+            enable_ppr=enable_ppr,
             keepalive_interval_s=keepalive_interval_s,
             cors_origins=cors_origins,
         )

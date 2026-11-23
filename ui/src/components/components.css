@@ -397,3 +397,13 @@
   font-size: var(--dle-text-xs);
   color: var(--dle-text-muted);
 }
+
+.dle-coord-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dle-space-2);
+}
+
+.dle-axis-row {
+  display: contents;
+}

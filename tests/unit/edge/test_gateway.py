@@ -274,12 +274,16 @@ async def test_governed_stub_fail_closed_sse_keepalives_and_tool_parking(tmp_pat
         assert cand0["finishReason"] == "STOP"
         assert cand0["groundingMetadata"]["groundingChunks"]
         cand_text = cand0["content"]["parts"][0]["text"]
+        assert gov_json["dleMetadata"]["coordinate"]["manifestSha256"]
+        assert gov_json["dleMetadata"]["graph"]["pprEnabled"] is True
+        assert gov_json["dleMetadata"]["graph"]["pprIterations"] >= 1
 
         rcpt_resp = await client.get(f"/v1/receipts/{rcpt_id}", headers=headers)
         assert rcpt_resp.status_code == 200
         rcpt_json = rcpt_resp.json()
         assert rcpt_json["payload"]["schema_version"] == "3.8.0"
         assert rcpt_json["payload"]["decision"]["release_mode"] == "gate_passed"
+        assert rcpt_json["payload"]["attempts"][0]["ppr_iterations"] >= 1
         assert rcpt_json["payload"]["response_sha256"] == sha256_text(cand_text)
 
         exp_resp = await client.post(
@@ -398,3 +402,49 @@ async def test_governed_stub_fail_closed_sse_keepalives_and_tool_parking(tmp_pat
         )
         assert res2.status_code == 200
         assert app.state.dle.tool_bridge.count() == 0
+
+
+@pytest.mark.asyncio
+async def test_governed_ppr_switch_disable_mode(tmp_path):
+    """T-UNIT-EDGE-11: Disabling DLE_ENABLE_PPR uses dense-only path with pprIterations=0."""
+    app = create_app(
+        settings=_make_settings(
+            enable_ppr=False,
+            data_dir=tmp_path / "data",
+            keys_dir=tmp_path / "keys",
+        ),
+        model_port=FakeModel(),
+    )
+    transport = httpx.ASGITransport(app=app)
+    headers = {"x-goog-api-key": "test-client-key"}
+    admin_headers = {"X-DLE-Admin-Key": "test-admin-key"}
+    clause = "Warehouse Candidate B replacement requires a signed change order."
+
+    async with httpx.AsyncClient(transport=transport, base_url="http://127.0.0.1:8740") as client:
+        reg = await client.post(
+            "/admin/sources",
+            headers=admin_headers,
+            json={
+                "title": "Change Order Clause",
+                "authorityClass": "primary_text",
+                "content": {
+                    "mimeType": "text/plain",
+                    "data": base64.b64encode(clause.encode("utf-8")).decode("ascii"),
+                },
+            },
+        )
+        assert reg.status_code == 201
+        resp = await client.post(
+            "/v1beta/models/dle-13axis-strict:generateContent",
+            headers=headers,
+            json={"contents": [{"role": "user", "parts": [{"text": clause}]}]},
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["dleMetadata"]["coordinate"]["activeAxes"]
+        assert body["dleMetadata"]["graph"]["pprEnabled"] is False
+        assert body["dleMetadata"]["graph"]["pprIterations"] == 0
+        rcpt_id = resp.headers["X-DLE-Receipt"]
+        rcpt = await client.get(f"/v1/receipts/{rcpt_id}", headers=headers)
+        assert rcpt.status_code == 200
+        assert rcpt.json()["payload"]["attempts"][0]["ppr_iterations"] == 0

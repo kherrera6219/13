@@ -84,6 +84,39 @@ export interface EvidenceSource {
   ingestedUtc?: string;
 }
 
+export interface CoordinateSummary {
+  manifestSha256: string;
+  jurisdictionState: string;
+  activeAxes: number[];
+  activatedRoles: string[];
+  atomsByAxis: Record<string, string[]>;
+}
+
+export interface GraphNodeItem {
+  vertexId: string;
+  axisId: number;
+  score: number;
+  hop: number;
+  synthetic: boolean;
+}
+
+export interface GraphEdgeItem {
+  src: string;
+  dst: string;
+  edgeType: string;
+  weight: number;
+}
+
+export interface GraphSummary {
+  pprEnabled: boolean;
+  hops: number;
+  pprIterations: number;
+  verticesRetained: number;
+  graphSha256: string;
+  nodes: GraphNodeItem[];
+  edges: GraphEdgeItem[];
+}
+
 export interface DleHeaders {
   releaseMode: ReleaseMode;
   receiptId: string | null;
@@ -109,6 +142,8 @@ export interface ChatRun {
   claims?: ClaimRow[];
   receipt?: SignedReceipt | null;
   terminalU?: number | null;
+  coordinate?: CoordinateSummary | null;
+  graph?: GraphSummary | null;
   timestamp: string;
 }
 

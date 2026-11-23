@@ -19,8 +19,20 @@ from dle.edge.translator import RunRequest
 from dle.errors import ModelUnavailable
 from dle.host.functions import FunctionContext, FunctionRecord, FunctionRegistry
 from dle.host.services.claim_extractor import ClaimExtractor
+from dle.host.services.coordinate import (
+    CoordinateParseResult,
+    parse_coordinate,
+    propose_anchors_from_query,
+)
 from dle.host.services.evidence import EvidenceService, RetrievedPassage
+from dle.host.services.graph import (
+    GraphExpansionResult,
+    align_crosswalk_terms,
+    expand_bounded_ppr,
+)
+from dle.host.services.overlay import SessionOverlay
 from dle.host.services.receipts import ReceiptSealer
+from dle.host.services.registry import RegistrySnapshot
 from dle.host.services.release import (
     CalibrationArtifact,
     LedgerObjection,
@@ -95,6 +107,76 @@ def _extract_writer_text(body: Mapping[str, object]) -> str:
     return ""
 
 
+def _build_coordinate_metadata(
+    coord_res: CoordinateParseResult,
+    *,
+    manifest_sha256: str,
+) -> dict[str, object]:
+    atoms_by_axis: dict[str, list[str]] = {}
+    for key, value in coord_res.coordinate.items():
+        if key.startswith("axis_") and key != "axis_13_temporal" and isinstance(value, list):
+            atoms = [
+                str(item["canonical_str"])
+                for item in value
+                if isinstance(item, Mapping) and isinstance(item.get("canonical_str"), str)
+            ]
+            if atoms:
+                atoms_by_axis[key] = atoms
+    return {
+        "manifestSha256": manifest_sha256,
+        "jurisdictionState": coord_res.coordinate.get("jurisdiction_state", "unscoped"),
+        "activeAxes": list(coord_res.active_axes),
+        "activatedRoles": list(coord_res.activated_roles),
+        "atomsByAxis": atoms_by_axis,
+    }
+
+
+def _build_graph_metadata(
+    *,
+    ppr_enabled: bool,
+    hops: int,
+    ppr_res: GraphExpansionResult | None,
+    graph_sha256: str,
+    vertices_retained: int,
+) -> dict[str, object]:
+    if ppr_res is None:
+        return {
+            "pprEnabled": ppr_enabled,
+            "hops": hops,
+            "pprIterations": 0,
+            "verticesRetained": vertices_retained,
+            "graphSha256": graph_sha256,
+            "nodes": [],
+            "edges": [],
+        }
+    return {
+        "pprEnabled": ppr_enabled,
+        "hops": ppr_res.effective_hops,
+        "pprIterations": ppr_res.ppr_iterations,
+        "verticesRetained": len(ppr_res.vertices),
+        "graphSha256": ppr_res.graph_sha256,
+        "nodes": [
+            {
+                "vertexId": v.vertex_id,
+                "axisId": v.axis_id,
+                "score": round(v.score, 6),
+                "hop": v.hop,
+                "synthetic": v.synthetic,
+            }
+            for v in ppr_res.vertices[:12]
+        ],
+        "edges": [
+            {
+                "src": e.src,
+                "dst": e.dst,
+                "edgeType": e.edge_type,
+                "weight": round(e.weight, 4),
+            }
+            for e in ppr_res.edges[:20]
+        ],
+    }
+
+
 def _build_governed_gemini_body(
     *,
     release_mode: Literal["released", "released_advisory", "held"],
@@ -104,8 +186,17 @@ def _build_governed_gemini_body(
     hold_reason: str | None,
     writer_body: Mapping[str, object] | None,
     grounding_metadata: dict[str, object] | None,
+    extra_dle_metadata: Mapping[str, object] | None = None,
 ) -> dict[str, object]:
     if release_mode == "held":
+        dle_meta: dict[str, object] = {
+            "releaseMode": "held",
+            "receiptId": receipt_id,
+            "tier": tier,
+            "holdReason": hold_reason or "verification_hold",
+        }
+        if extra_dle_metadata:
+            dle_meta.update(extra_dle_metadata)
         return {
             "candidates": [
                 {
@@ -117,12 +208,7 @@ def _build_governed_gemini_body(
                     "finishReason": "STOP",
                 }
             ],
-            "dleMetadata": {
-                "releaseMode": "held",
-                "receiptId": receipt_id,
-                "tier": tier,
-                "holdReason": hold_reason or "verification_hold",
-            },
+            "dleMetadata": dle_meta,
         }
 
     out = copy.deepcopy({str(k): v for k, v in writer_body.items()}) if writer_body else {}
@@ -161,11 +247,14 @@ def _build_governed_gemini_body(
         if isinstance(first_cand, dict):
             first_cand["groundingMetadata"] = grounding_metadata
 
-    out["dleMetadata"] = {
+    rel_meta: dict[str, object] = {
         "releaseMode": release_mode,
         "receiptId": receipt_id,
         "tier": tier,
     }
+    if extra_dle_metadata:
+        rel_meta.update(extra_dle_metadata)
+    out["dleMetadata"] = rel_meta
     return out
 
 
@@ -237,6 +326,11 @@ def _build_receipt_payload(
     receipt_release_mode: str,
     response_sha256: str,
     records: Sequence[FunctionRecord],
+    coordinate_manifest_sha256: str | None = None,
+    hops: int | None = None,
+    ppr_iterations: int = 0,
+    vertices_retained: int | None = None,
+    graph_sha256: str | None = None,
 ) -> dict[str, object]:
     role_axes: list[int] = [8]
     role_profiles: list[str] = ["scholar-default"]
@@ -291,7 +385,9 @@ def _build_receipt_payload(
         "utc": utc_iso,
         "chain_id": "main",
         "previous_hash": "GENESIS",
-        "coordinate_manifest_sha256": sha256_text("phase2-coordinate-manifest"),
+        "coordinate_manifest_sha256": (
+            coordinate_manifest_sha256 or sha256_text("phase2-coordinate-manifest")
+        ),
         "policy_sha256": policy_sha256,
         "verifier_version": "0.1.0",
         "attempts": [
@@ -301,10 +397,12 @@ def _build_receipt_payload(
                 "event": "initial",
                 "reason": f"tier_{tier}_phase2_verify",
                 "tier": tier,
-                "hops": 1 if tier == 1 else 2,
-                "ppr_iterations": 0,
-                "vertices_retained": len(passages),
-                "graph_sha256": sha256_text("phase2-hybrid-retrieval"),
+                "hops": hops if hops is not None else (1 if tier == 1 else 2),
+                "ppr_iterations": ppr_iterations,
+                "vertices_retained": (
+                    vertices_retained if vertices_retained is not None else len(passages)
+                ),
+                "graph_sha256": graph_sha256 or sha256_text("phase2-hybrid-retrieval"),
                 "source_manifest_sha256": source_manifest,
                 "role_calls": [
                     {
@@ -405,8 +503,10 @@ async def run_governed_phase2(
     session_repo: SessionRepository,
     calibration: CalibrationArtifact | None,
     api_key: str,
+    registry_snapshot: RegistrySnapshot | None = None,
+    enable_ppr: bool = True,
 ) -> GovernedRunResult:
-    """Execute the full Phase 2 verification, gate, disclosure, and sealing workflow."""
+    """Execute the governed verification, 13-axis/PPR, gate, and sealing workflow."""
     log = get_logger("dle.host.workflow.governed")
     start_clock = time.perf_counter()
     profile = run_req.profile or "strict"
@@ -417,6 +517,12 @@ async def run_governed_phase2(
     query_digest = sha256_text(query_str)
     writer_model = model_registry.pin_for_job("writer")
     utc_iso = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    coord_manifest_sha = (
+        registry_snapshot.manifest_sha256
+        if registry_snapshot is not None
+        else sha256_text("phase2-coordinate-manifest")
+    )
+    overlay: SessionOverlay | None = None
 
     try:
         k01_res = function_registry.invoke(
@@ -446,6 +552,87 @@ async def run_governed_phase2(
         raw_tier = k10_res.output.get("tier", 1)
         tier = int(raw_tier) if isinstance(raw_tier, int | float) else 1
 
+        extra_dle_meta: dict[str, object] = {}
+        ppr_res: GraphExpansionResult | None = None
+        ppr_iters = 0
+        eff_hops = 1 if tier <= 1 else 2
+        eff_vertices: int | None = None
+        eff_graph_sha = sha256_text("dense-only" if not enable_ppr else "phase2-hybrid-retrieval")
+
+        if registry_snapshot is not None:
+            proposed_anchors = propose_anchors_from_query(
+                query_str or "warehouse", registry_snapshot
+            )
+            coord_res = parse_coordinate(
+                proposed_anchors=proposed_anchors,
+                snapshot=registry_snapshot,
+                as_of=datetime.now(UTC).date(),
+                binding_claim=any(a.startswith("[HUB:") for a in proposed_anchors),
+            )
+            function_registry.invoke(
+                "DVSS-K02",
+                FunctionContext(
+                    run_id=run_req.run_id,
+                    attempt_id=attempt_id,
+                    profile=profile,
+                    tier=tier,
+                    payload={
+                        "coordinate": coord_res.coordinate,
+                        "active_axes": list(coord_res.active_axes),
+                        "manifest_sha256": coord_manifest_sha,
+                    },
+                ),
+                records=records,
+            )
+            extra_dle_meta["coordinate"] = _build_coordinate_metadata(
+                coord_res, manifest_sha256=coord_manifest_sha
+            )
+
+            if enable_ppr:
+                overlay = SessionOverlay(run_req.session_id)
+                limits = config.tiers.graph_limits
+                ppr_res = expand_bounded_ppr(
+                    anchors=proposed_anchors,
+                    snapshot=registry_snapshot,
+                    tier=tier,
+                    retry_count=0,
+                    overlay=overlay,
+                    damping=limits.ppr_damping,
+                    max_iterations=limits.ppr_max_iterations,
+                    tolerance=limits.ppr_tolerance,
+                    max_vertices=limits.max_vertices,
+                )
+                ppr_iters = ppr_res.ppr_iterations
+                eff_hops = ppr_res.effective_hops
+                eff_vertices = len(ppr_res.vertices)
+                eff_graph_sha = ppr_res.graph_sha256
+                _aligned = align_crosswalk_terms(
+                    atoms=[v.vertex_id for v in ppr_res.vertices],
+                    snapshot=registry_snapshot,
+                )
+                function_registry.invoke(
+                    "DVSS-K07",
+                    FunctionContext(
+                        run_id=run_req.run_id,
+                        attempt_id=attempt_id,
+                        profile=profile,
+                        tier=tier,
+                        payload={
+                            "vertices": [v.vertex_id for v in ppr_res.vertices],
+                            "ppr_iterations": ppr_iters,
+                            "aligned_groups": len(_aligned.groups),
+                        },
+                    ),
+                    records=records,
+                )
+                extra_dle_meta["graph"] = _build_graph_metadata(
+                    ppr_enabled=True,
+                    hops=eff_hops,
+                    ppr_res=ppr_res,
+                    graph_sha256=eff_graph_sha,
+                    vertices_retained=eff_vertices,
+                )
+
         # Acquire relevant evidence passages first (DVSS-K05 / K06).
         retrieval = await evidence_service.retrieve(
             query=query_str or "warehouse substitution policy",
@@ -453,6 +640,15 @@ async def run_governed_phase2(
             idempotency_key=f"{run_req.run_id}:{attempt_id}",
             api_key=api_key,
         )
+        if registry_snapshot is not None and not enable_ppr:
+            eff_vertices = len(retrieval.passages)
+            extra_dle_meta["graph"] = _build_graph_metadata(
+                ppr_enabled=False,
+                hops=eff_hops,
+                ppr_res=None,
+                graph_sha256=eff_graph_sha,
+                vertices_retained=eff_vertices,
+            )
         function_registry.invoke(
             "DVSS-K05",
             FunctionContext(
@@ -704,6 +900,7 @@ async def run_governed_phase2(
             hold_reason=gate.block_reason if disclosure.api_release_mode == "held" else None,
             writer_body=writer_res.body,
             grounding_metadata=verification.grounding_metadata,
+            extra_dle_metadata=extra_dle_meta or None,
         )
 
         receipt_payload = _build_receipt_payload(
@@ -728,11 +925,18 @@ async def run_governed_phase2(
             receipt_release_mode=disclosure.receipt_release_mode,
             response_sha256=disclosure.response_sha256,
             records=records,
+            coordinate_manifest_sha256=coord_manifest_sha,
+            hops=eff_hops,
+            ppr_iterations=ppr_iters,
+            vertices_retained=eff_vertices,
+            graph_sha256=eff_graph_sha,
         )
         sealed = receipt_sealer.seal_receipt(
             payload=receipt_payload,
             api_release_mode=disclosure.api_release_mode,
         )
+        if overlay is not None:
+            overlay.clear_on_seal()
         ops_repo.record_run_metrics(
             run_id=run_req.run_id,
             tier=tier,

@@ -49,6 +49,8 @@ from dle.host.services import (
     Ed25519KeyManager,
     EvidenceService,
     ReceiptSealer,
+    RegistrySnapshot,
+    load_registry,
 )
 from dle.host.workflow import (
     DEFAULT_PHASE2_CALIBRATION,
@@ -128,6 +130,7 @@ class GatewayRuntime:
     claim_verifier: ClaimVerifier
     key_manager: Ed25519KeyManager
     receipt_sealer: ReceiptSealer
+    registry_snapshot: RegistrySnapshot
     calibration: CalibrationArtifact | None = DEFAULT_PHASE2_CALIBRATION
     egress: EgressClient | None = None
 
@@ -314,6 +317,18 @@ def create_app(
     claim_verifier = ClaimVerifier(eff_nli, evidence_service)
     key_manager = Ed25519KeyManager(receipt_repo, keys_dir=eff_settings.keys_dir)
     receipt_sealer = ReceiptSealer(receipt_repo, key_manager)
+    default_pilot_dir = eff_settings.config_dir / "pilots" / "warehouse_substitution"
+    eff_overlay_dir = (
+        eff_settings.registry_overlay_dir
+        if eff_settings.registry_overlay_dir is not None
+        else (default_pilot_dir if default_pilot_dir.is_dir() else None)
+    )
+    registry_snapshot = load_registry(
+        eff_settings.config_dir / "registry",
+        overlay_dir=eff_overlay_dir,
+        w3=eff_config.tiers.distance_weights.w3,
+        w67=eff_config.tiers.distance_weights.w67,
+    )
 
     runtime = GatewayRuntime(
         settings=eff_settings,
@@ -336,6 +351,7 @@ def create_app(
         claim_verifier=claim_verifier,
         key_manager=key_manager,
         receipt_sealer=receipt_sealer,
+        registry_snapshot=registry_snapshot,
         calibration=calibration,
         egress=egress,
     )
@@ -561,6 +577,8 @@ def create_app(
             session_repo=runtime.session_repo,
             calibration=runtime.calibration,
             api_key=upstream_key,
+            registry_snapshot=runtime.registry_snapshot,
+            enable_ppr=runtime.settings.enable_ppr,
         )
         out_body, headers = runtime.composer.compose_governed(
             release_mode=gov_res.release_mode,
@@ -627,6 +645,8 @@ def create_app(
                     session_repo=runtime.session_repo,
                     calibration=runtime.calibration,
                     api_key=upstream_key,
+                    registry_snapshot=runtime.registry_snapshot,
+                    enable_ppr=runtime.settings.enable_ppr,
                 )
                 return runtime.composer.compose_governed(
                     release_mode=gov_res.release_mode,

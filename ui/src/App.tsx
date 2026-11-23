@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import "./App.css";
+import { AddressGraphDrawer } from "./components/AddressGraphDrawer";
 import { ChatComposer, type ComposerSubmitPayload } from "./components/ChatComposer";
 import { ClaimsTable } from "./components/ClaimsTable";
 import { MessageBubble } from "./components/MessageBubble";
@@ -383,6 +384,10 @@ export function App() {
             </dl>
 
             <ClaimsTable claims={inspectedRun?.claims ?? []} />
+            <AddressGraphDrawer
+              coordinate={inspectedRun?.coordinate ?? null}
+              graph={inspectedRun?.graph ?? null}
+            />
             <ReceiptViewer receipt={inspectedRun?.receipt ?? null} />
           </aside>
         </main>

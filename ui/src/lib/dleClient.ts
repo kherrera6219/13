@@ -4,8 +4,10 @@ import type {
   CitationItem,
   ClaimRow,
   ClaimStatus,
+  CoordinateSummary,
   DleHeaders,
   EvidenceSource,
+  GraphSummary,
   HealthStatus,
   ReleaseMode,
   SignedReceipt,
@@ -253,6 +255,26 @@ export async function sendChatMessage(input: SendMessageInput): Promise<SendMess
     tier: null,
     apiVersion: null,
   };
+  let capturedCoordinate: CoordinateSummary | null = null;
+  let capturedGraph: GraphSummary | null = null;
+
+  const extractDlePhase3 = (obj: unknown) => {
+    if (!obj || typeof obj !== "object") {
+      return;
+    }
+    const root = obj as Record<string, unknown>;
+    const meta = root.dleMetadata;
+    if (!meta || typeof meta !== "object") {
+      return;
+    }
+    const rec = meta as Record<string, unknown>;
+    if (rec.coordinate && typeof rec.coordinate === "object") {
+      capturedCoordinate = rec.coordinate as CoordinateSummary;
+    }
+    if (rec.graph && typeof rec.graph === "object") {
+      capturedGraph = rec.graph as GraphSummary;
+    }
+  };
 
   const capturingFetch: typeof fetch = async (reqInput, reqInit) => {
     const response = await fetch(reqInput, reqInit);
@@ -267,6 +289,14 @@ export async function sendChatMessage(input: SendMessageInput): Promise<SendMess
       tier: tierHeader !== null && !Number.isNaN(Number(tierHeader)) ? Number(tierHeader) : null,
       apiVersion: apiVerHeader,
     };
+    const contentType = response.headers.get("content-type") ?? "";
+    if (contentType.includes("application/json")) {
+      try {
+        extractDlePhase3(await response.clone().json());
+      } catch {
+        // Ignore clone parse issues on non-JSON error payloads.
+      }
+    }
     return response;
   };
 
@@ -317,6 +347,7 @@ export async function sendChatMessage(input: SendMessageInput): Promise<SendMess
       if (chunkCitations.length > 0) {
         finalCitations = chunkCitations;
       }
+      extractDlePhase3(chunk);
     }
   } else {
     const response: GenerateContentResponse = await ai.models.generateContent({
@@ -365,6 +396,8 @@ export async function sendChatMessage(input: SendMessageInput): Promise<SendMess
     claims,
     receipt,
     terminalU,
+    coordinate: capturedCoordinate,
+    graph: capturedGraph,
     timestamp: new Date().toISOString(),
   };
 

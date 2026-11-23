@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/k07.out.json",
+  "title": "DVSS_K07_Output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["vertices", "edges", "ppr_iterations", "converged", "effective_hops", "graph_sha256"],
+  "properties": {
+    "vertices": {
+      "type": "array",
+      "maxItems": 250,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["vertex_id", "axis_id", "score", "hop", "distance", "synthetic"],
+        "properties": {
+          "vertex_id": { "type": "string", "minLength": 1 },
+          "axis_id": { "type": "integer", "minimum": 0, "maximum": 13 },
+          "score": { "type": "number", "minimum": 0.0 },
+          "hop": { "type": "integer", "minimum": 0, "maximum": 4 },
+          "distance": { "type": "number", "minimum": 0.0 },
+          "synthetic": { "type": "boolean" },
+          "token_cost": { "type": "integer", "minimum": 1 }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["src", "dst", "edge_type", "weight"],
+        "properties": {
+          "src": { "type": "string" },
+          "dst": { "type": "string" },
+          "edge_type": { "type": "string" },
+          "weight": { "type": "number", "exclusiveMinimum": 0 },
+          "predicate": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "ppr_iterations": { "type": "integer", "minimum": 0, "maximum": 80 },
+    "converged": { "type": "boolean" },
+    "effective_hops": { "type": "integer", "minimum": 1, "maximum": 4 },
+    "graph_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "pruned_count": { "type": "integer", "minimum": 0 },
+    "reserved_synthetic_used": { "type": "integer", "minimum": 0 }
+  }
+}

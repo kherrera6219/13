@@ -2,6 +2,19 @@
 
 Running record for agents. Newest entry first. Keep each entry short: what changed, what was learned, what is next.
 
+## 2026-11-22 — Phase 3 Complete (Wave 3B: Bounded PPR K07, USKD Overlay P03, Crosswalks P06, Workflow/UI Drawer & Gate Report)
+
+**State.** Phase 3 (`H3`, `O2`, `D4`, `H4`, `H6`, `H7`, `DVSS-K02`, `K06`, `K07`, `P01`, `P03`, `P06`, `FR-UI-01..02`) is complete and cleared via `reports/phase3_gate.md` (`dle-middleware:phase3`). Bounded Personalized PageRank retrieval (`alpha=0.85`, `<= 80` iters, `<= 250` vertices, hop limit `<= 4`, post-hydration edge/token budget, reserved synthetic slots) runs behind the `DLE_ENABLE_PPR` switch alongside dense hybrid retrieval, feeding 13-axis coordinate + PPR metadata into 3.8.0 signed receipts and the Browser UI `AddressGraphDrawer`.
+
+**Changed.**
+- `dle/host/services/overlay.py` (`H7`): Added `SessionOverlay` (`depth <= 7`, `[TMP:5.TMP.<uuid>]`, `clear_on_seal()`) and `can_cite_as_evidence` forbidding citing TMP nodes as durable evidence (`DVSS-P03`).
+- `dle/host/services/graph.py` (`H6`) & `contracts/functions/{k07,p03,p06}.{in,out}.json`: Added `expand_bounded_ppr`, `effective_hop_budget`, and `align_crosswalk_terms` (`DVSS-K07`, `DVSS-P06`).
+- `dle/edge/settings.py`, `dle/host/workflow/governed.py`, `dle/edge/gateway.py`: Added `DLE_ENABLE_PPR` & `DLE_REGISTRY_OVERLAY_DIR` (auto-loading `config/pilots/warehouse_substitution` when present), real `DVSS-K02` + `DVSS-K07` receipt metrics (`coordinate_manifest_sha256`, `ppr_iterations`, `graph_sha256`), and `dleMetadata.coordinate` / `dleMetadata.graph`.
+- `ui/`: Added `ui/src/components/AddressGraphDrawer.tsx` + `.stories.tsx`, `src/fixtures/phase3.ts`, client capture in `dleClient.ts`, `Run Inspector` wiring in `App.tsx`, and Storybook/axe registration in `stories.test.tsx`.
+- Added `tests/unit/host/services/test_graph_and_overlay.py`, `test_governed_ppr_switch_disable_mode` in `test_gateway.py`, and `reports/phase3_gate.md`; updated `docs/traceability/rtm.csv` and `CHANGELOG.md`.
+
+**Next.** Execute **Phase 4 (Quad Persona Engine, Ledger, Retries & Escalation §18b)**: build-time reference fetcher (`H8` CIP/SOC/O*NET), dynamic 7-field MDKF profiles (`DVSS-K03`/`P10`) + role token allocation (`DVSS-P08`), verifier-only append ledger (`DVSS-K12`), 12-step cutoff-blind orchestrator (`DVSS-K09`, `P02`, `P07`, `P11`), Browser `RunSummaryCard`/`PersonaChips`/`StepTimeline`/`PersonaDrawer`, and full §18 conformance against fake & Gemini calls.
+
 ## 2026-11-22 — Phase 3 Wave 3A: 13-Axis Registry Loader, Release CLI, Warehouse Pilot & Coordinate Engine (H3, O2, H4)
 
 **State.** Phase 3 Wave 3A complete. Persistent `RegistryRepository` (`registry.db`), `H3` 13-axis registry loader (`load_registry` with alias rewriting, retired exclusion, fixture rejection outside tests, spine/crosswalk graph construction, and JCS manifest SHA-256), `O2` offline release CLI (`dle.tools.registry_release` / `offline/registry_release.py`), `D4` verified Warehouse Substitution pilot corpus (`config/pilots/warehouse_substitution/`), and `H4` (`DVSS-K02` Nuremberg/TMP coordinate parser, `DVSS-K06` temporal interval applicability & conflict checker via `dle.temporal`, `DVSS-P01` Axis 12 jurisdiction precedence ordering) plus paired function contracts (`k02`, `k06`, `p01`) are implemented and verified.
