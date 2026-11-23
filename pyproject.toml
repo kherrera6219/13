@@ -64,6 +64,10 @@ strict = true
 python_version = "3.12"
 packages = ["dle"]
 
+[[tool.mypy.overrides]]
+module = ["sqlite_vec", "sqlite_vec.*", "onnxruntime", "onnxruntime.*"]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [

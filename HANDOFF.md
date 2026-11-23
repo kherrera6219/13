@@ -2,6 +2,22 @@
 
 Running record for agents. Newest entry first. Keep each entry short: what changed, what was learned, what is next.
 
+## 2026-11-22 — Phase 2 Wave 2A: SQLite Stores, M4 Embeddings, M3 NLI & H5 Evidence (DVSS-K05)
+
+**State.** Phase 2 Wave 2A complete. Persistent 5-DB SQLite stores (`registry`, `evidence`, `sessions`, `receipts`, `ops`) with append-only triggers + `sqlite-vec`, `M4` `gemini-embedding-001` adapter, `M3` NLI scorer interface (`DeterministicLexicalNliScorer` + SHA-256 verified `OnnxNliScorer`), and `H5` `EvidenceService` (`DVSS-K05` / `DVSS-K06` + `contracts/functions/k05`) are implemented and verified.
+
+**Changed.**
+- `dle/store/`: Added `migrations.py` (`open_stores`, `apply_migrations`, `load_sqlite_vec`, `ensure_vector_table` parsing `-- @database` sections of `0001_init.sql`) and thread-safe `repositories.py` (`EvidenceRepository` with FTS5 + `sqlite-vec` KNN, `SessionRepository`, `ReceiptRepository`, `OpsRepository`) plus `tests/unit/store/test_stores.py`.
+- `dle/models/embeddings.py` & `dle/models/nli.py`: Added `M4` `EmbeddingService` (unit L2-normalized `gemini-embedding-001` vectors) and `M3` `NliScorer` (`DeterministicLexicalNliScorer` + fail-closed SHA-256 `OnnxNliScorer`), plus `tests/unit/models/test_embeddings_and_nli.py`.
+- `dle/host/services/evidence.py` & `contracts/functions/k05.{in,out}.json`: Added `H5` `EvidenceService` (`register_document` chunking + hybrid indexing, idempotent RRF `retrieve` with `dle.temporal` `DVSS-K06` half-open filtering, and `verify_binding_authority` `DVSS-K05`), plus `tests/unit/host/services/test_evidence.py`.
+- Updated `pyproject.toml` mypy overrides for `sqlite_vec`/`onnxruntime`, `docs/traceability/rtm.csv`, and `CHANGELOG.md`.
+
+**Learned.**
+- Keeping conditional prepositions like `"without"` out of sentence negation sets prevents double-negation cancellation when comparing `"prohibits X without signoff"` against `"permitted X without signoff"` in lexical NLI scoring.
+- `sqlite_vec` 0.1.9 loads cleanly onto `evidence.db` in Python 3.12 Docker (`vec0` virtual table + `MATCH ? AND k = ?` KNN queries).
+
+**Next.** Execute **Phase 2 Wave 2B** (`H10` Claim Extractor + 30/200-draft benchmark deciding ADR-008, `H12` Verifier, `H13` Scorer `DVSS-K08` + terminal `u`, `H14` Release Controller `DVSS-K04`/`K11`/`K12`/`P04`/`P12`/`P13`, `H15` Ed25519 + WORM Merkle receipts & offline CLI verifier, `E6` gateway wiring + `tests/gemini_compat` `GC-12`/`GC-13`/`GC-25`, and Browser Inspector UI).
+
 ## 2026-11-22 — Phase 1 Complete (Wave 1D: UI Shell, SDK Compat Suite GC-01..26 & Exit Gate P1-19)
 
 **State.** Phase 1 (`G3`/`G4`) complete and verified. All Phase 1 tickets (`P1-01`–`P1-20`) are implemented, tested across both official `google-genai` (Python) and `@google/genai` (JS) SDKs, built into `dle-middleware:phase1` Docker image with live browser UI on `127.0.0.1:8740`, and signed off in `reports/phase1_gate.md`.

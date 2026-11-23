@@ -1,5 +1,14 @@
 """Host domain services package (pilot §18 reference pipeline and Phase 2+ services)."""
 
+from dle.host.services.evidence import (
+    AUTHORITY_PRIOR,
+    QUALIFYING_BINDING_CLASSES,
+    AuthorityCheckResult,
+    EvidenceService,
+    RetrievalResult,
+    RetrievedPassage,
+    chunk_document_text,
+)
 from dle.host.services.pilot import (
     CoordinateResolver,
     DriftMonitor,
@@ -16,15 +25,22 @@ from dle.host.services.pilot import (
 )
 
 __all__ = [
+    "AUTHORITY_PRIOR",
+    "QUALIFYING_BINDING_CLASSES",
+    "AuthorityCheckResult",
     "CoordinateResolver",
     "DriftMonitor",
+    "EvidenceService",
     "PilotClaim",
     "PilotExecutionResult",
     "PilotObjection",
     "PilotPassage",
     "PilotPipeline",
     "PilotReceiptSealer",
+    "RetrievalResult",
+    "RetrievedPassage",
     "calibrate_crc",
+    "chunk_document_text",
     "compute_nonconformity",
     "pack_hydrated",
     "ppr",

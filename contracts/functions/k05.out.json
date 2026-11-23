@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/k05.out.json",
+  "title": "DVSS_K05_Output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["idempotency_key", "attempted", "succeeded"],
+  "properties": {
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 1
+    },
+    "attempted": { "type": "boolean" },
+    "succeeded": { "type": "boolean" },
+    "from_cache": { "type": "boolean" },
+    "passages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["passage_id", "source_id", "authority_class", "revision", "content_sha256", "active_in_scope"],
+        "properties": {
+          "passage_id": { "type": "string", "minLength": 1 },
+          "source_id": { "type": "string", "minLength": 1 },
+          "authority_class": { "type": "string", "minLength": 1 },
+          "revision": { "type": "string", "minLength": 1 },
+          "locator": { "type": "string" },
+          "content_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "valid_from": { "type": ["string", "null"], "format": "date" },
+          "valid_to": { "type": ["string", "null"], "format": "date" },
+          "active_in_scope": { "type": "boolean" },
+          "score": { "type": "number" }
+        }
+      }
+    },
+    "authority_checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["claim_id", "status", "supporting_passage_ids"],
+        "properties": {
+          "claim_id": { "type": "string", "minLength": 1 },
+          "status": {
+            "type": "string",
+            "enum": ["verified", "not_found", "unavailable", "not_applicable"]
+          },
+          "supporting_passage_ids": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    }
+  }
+}

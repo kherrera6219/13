@@ -44,3 +44,6 @@ FR-RCPT-03;DLE-PLN-001,"dle/host/services/pilot.py",tests/engines/legacy_pilot/t
 FR-API-01..03;FR-TOOL-01..03,"tests/gemini_compat/fake_upstream.py,tests/gemini_compat/conftest.py",tests/gemini_compat/test_python_sdk.py;tests/gemini_compat/js_sdk_compat.mjs,1,implemented
 FR-UI-01,"ui/src/components/,ui/src/App.tsx",ui/src/stories.test.tsx;ui/src/components/*.stories.tsx,1,implemented
 NFR-PERF-01;NFR-PERF-02,"dle/edge/gateway.py,dle/edge/streaming.py",reports/phase1_gate.md;tests/unit/edge/test_streaming.py,1,implemented
+ADR-005;NFR-PRIV-01;FR-RCPT-01,"dle/store/migrations.py,dle/store/repositories.py",tests/unit/store/test_stores.py,2,implemented
+FR-VER-02;ADR-006;ADR-011,"dle/models/embeddings.py,dle/models/nli.py",tests/unit/models/test_embeddings_and_nli.py,2,implemented
+FR-VER-03;DVSS-K05;DVSS-K06,"dle/host/services/evidence.py,contracts/functions/k05.in.json,contracts/functions/k05.out.json",tests/unit/host/services/test_evidence.py,2,implemented
