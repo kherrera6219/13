@@ -80,7 +80,9 @@ jobs:
             uv sync
           fi
       - name: SCA
-        run: uv run pip-audit --strict --skip-editable
+        run: |
+          uv export --frozen --no-emit-project -o /tmp/requirements.txt
+          uv run pip-audit --strict --no-deps -r /tmp/requirements.txt
       - name: SAST
         run: uvx semgrep scan --config p/python --config p/secrets --config .semgrep/dle.yml --error --metrics=off
       - name: Secret scan

@@ -2,6 +2,25 @@
 
 Running record for agents. Newest entry first. Keep each entry short: what changed, what was learned, what is next.
 
+## 2026-11-22 — Phase 1 Wave 1A: Foundation (P1-01, P1-02, P1-03, P1-04, P1-16)
+
+**State.** Phase 1 Wave 1A complete. Foundation runtime modules (`dle/errors.py`, `dle/tools/`, `dle/config/`, `dle/models/egress.py`, `dle/observability/`) implemented and verified on Python 3.12 in Docker with `uv.lock`, `ruff`, `mypy --strict`, Semgrep, `pip-audit`, and `pytest --cov=dle`.
+
+**Changed.**
+- `P1-01`: Added `dle/errors.py` (`DleError` hierarchy with `DLE-E<nnnn>` codes), typing stubs (`types-PyYAML`, `types-jsonschema`), pytest loop scope config in `pyproject.toml`, generated `uv.lock`, and added `tests/unit/test_errors.py`.
+- `P1-02`: Added `contracts/functions.schema.json`, `dle/tools/validate_contracts.py` (validating OpenAPI 3.1, Draft 2020-12 JSON schemas, `config/functions.yaml`, function I/O pairs, and profiles), and `tests/unit/tools/test_validate_contracts.py` (`T-UNIT-TOOL-01..05`).
+- `P1-03`: Added `dle/config/` (`models.py`, `loader.py`) with strict Pydantic v2 models, `extends` profile resolution, `KernelNotOptional` enforcement, RFC 8785 JCS `policy_sha256` digest, and `tests/unit/config/test_loader.py` (`T-UNIT-CFG-01..05`).
+- `P1-04`: Added `dle/models/egress.py` (`EgressClient` deny-by-default over `httpx` with size/duration logging only), `dle/tools/check_egress_imports.py` AST guard, and tests (`T-UNIT-SEC-01..06`).
+- `P1-16`: Added `dle/observability/` (`logging.py`, `metrics.py`) with `structlog` JSON output, key/regex/registered-secret redaction, Prometheus metrics, and canary tests (`T-UNIT-OBS-01..05`).
+- Updated `docs/traceability/rtm.csv`, `docs/INDEX.md`, `CHANGELOG.md`.
+
+**Learned.**
+- `openapi-spec-validator` `0.7+` uses `OpenAPIV31SpecValidator(spec, base_uri=...).iter_errors()` for multi-error JSON-pointer diagnostics and resolves `./receipt.schema.json` relative `$ref`s cleanly when `base_uri` is passed as a `file://` URI.
+- `.semgrep/dle.yml` rule `dle-no-content-in-logs` scans `tests/` as well as `dle/`; redaction tests pass sensitive kwargs via dict unpacking (`**fields`) rather than literal `text=`/`prompt=`/`passage=` kwargs.
+- Bumped `cryptography>=50,<52`, `pytest>=9.0.3,<10`, `pytest-asyncio>=1.0,<2`, and `pytest-cov>=5.0,<8` in `pyproject.toml` to resolve upstream CVEs; configured `ci.yml` SCA to audit exported frozen dependencies (`uv export --frozen --no-emit-project` + `pip-audit --strict --no-deps`) because `pip-audit --strict --skip-editable` fails on the local editable package.
+
+**Next.** Execute Phase 1 Wave 1B (`P1-05` Model port + Gemini/fake adapters, `P1-06` model registry & pricing, `P1-07` gateway routes & loopback/auth, `P1-08` session resolver, `P1-09` request translator).
+
 ## 2026-11-20 — Phase 0: Docker + browser runtime, ADR-011, and cloud Gemini pins
 
 **State.** Phase 0 complete. Docker/browser runtime and Google Gemini cloud pins (`gemini-4-neon`, `gemini-4-carbon`, `gemini-embedding-001`) locked in. All 55 unit tests and Ruff checks on `dle tests` pass.

@@ -76,6 +76,7 @@ Every document, specification, contract and plan for the DataLogicEngine 13-axis
 | — | Coordinate schema | `contracts/coordinate.schema.json` | 3.7.1 (migrate in P1-20) |
 | — | Role artifact schema | `contracts/role_artifact.schema.json` | 1.0.0 |
 | — | Claim extraction output schema | `contracts/prompts/claim_extraction.schema.json` | 1.0.0 |
+| FR-FN-01 | Bound function catalog schema | `contracts/functions.schema.json` | 1.0.0 |
 | — | Function I/O schemas (written per phase) | `contracts/functions/` | — |
 
 ## 6. Specifications

@@ -5,6 +5,7 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [Unreleased]
 
 ### Added
+- Phase 1 Wave 1A (`P1-01`–`P1-04`, `P1-16`): `dle/errors.py`, `dle/observability/` (`structlog` JSON logging with strict redaction and Prometheus metrics), `contracts/functions.schema.json`, `dle/tools/validate_contracts.py`, `dle/config/` (strict Pydantic models, `extends` profile resolution, `KernelNotOptional`, RFC 8785 JCS `policy_sha256`), `dle/models/egress.py` (`EgressClient` allowlist over `httpx`), `dle/tools/check_egress_imports.py`, `uv.lock`, and unit tests.
 - `docs/adr/011-docker-browser-and-gemini-cloud.md` (ADR-011), `docs/plans/multi_phase_build_plan.md` (`DLE-PLN-002`), `Dockerfile`, `docker-compose.yml`, `.dockerignore`, and `.env.example`.
 - `gemini-4-neon` and `gemini-embedding-001` model pins and pricing in `config/model_pins.yaml` and `docs/vendor/gemini_4_carbon_verification.md`, verified by `T-UNIT-REG-29`.
 - `.gitattributes`, `.python-version` (`3.12`), Hatchling build config in `pyproject.toml`, and v3.13 white paper copies under `docs/whitepaper/`.
