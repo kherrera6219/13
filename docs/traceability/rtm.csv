@@ -2,7 +2,7 @@ requirements,components,tests,phase,status
 FR-API-01..03,"E1,E3,M1",tests/gemini_compat/test_python_sdk.py;tests/gemini_compat/js_sdk_compat.mjs;tests/unit/edge/test_gateway.py,1,implemented
 FR-API-04..06,"E5,H14",dle/host/services/verifier.py;dle/host/services/release.py;tests/unit/host/services/test_release_and_receipts.py,2,implemented
 FR-API-07,E5,tests/unit/edge/test_streaming.py;tests/gemini_compat/test_python_sdk.py::test_gc07_streaming_and_governed_keepalive,1,implemented
-FR-API-08,"E6,H15",T-CONTRACT-RCPT-01..04,2,planned
+FR-API-08,"E6,H15",tests/unit/edge/test_gateway.py;tests/unit/host/services/test_release_and_receipts.py;tests/gemini_compat/test_python_sdk.py,2,implemented
 FR-SES-01..03,"E2,H15",tests/unit/edge/test_sessions.py;tests/gemini_compat/test_python_sdk.py,1,implemented
 FR-TOOL-01..05,"E4,H5,H8",T-COMPAT-TOOL-01..08;T-ENG-TOOL-01..04,"1,4",planned
 FR-WF-01..07,H1,T-ENG-WF-01..14,4,planned
@@ -13,7 +13,7 @@ FR-FN-01..09,"H16,functions/",T-ENG-FN-01..12;T-EVAL-ABL-01,"2-5,7",planned
 FR-VER-01..03,"H10-H12,M3",tests/contract/prompts/test_claim_extractor.py;tests/unit/host/services/test_verifier_and_scorer.py;tests/unit/host/services/test_evidence.py,"2,4",implemented (Phase 2)
 FR-REL-01..04,"H13,H14,O1",tests/unit/host/services/test_verifier_and_scorer.py;tests/unit/host/services/test_release_and_receipts.py,"2,6",implemented (Phase 2)
 FR-RCPT-01..03,H15,tests/unit/host/services/test_release_and_receipts.py;dle/tools/verify_receipt.py,2,implemented
-FR-UI-01..02,C1,ui/src/stories.test.tsx;T-UI-01..06,"1,5",in_progress
+FR-UI-01..02,C1,ui/src/stories.test.tsx;ui/src/components/*.stories.tsx,"1,2,5",implemented (Phase 2 Inspector UI)
 NFR-PERF-01..02,runtime,reports/phase1_gate.md;tests/unit/edge/test_streaming.py,"1,5",in_progress
 NFR-REL-01..02,"M1,H14",tests/unit/models/test_port_and_gemini.py,1,implemented
 NFR-SEC-01..04,"E1,M1,keys",tests/unit/edge/test_gateway.py;tests/unit/models/test_egress.py,1,implemented
@@ -50,3 +50,4 @@ FR-VER-03;DVSS-K05;DVSS-K06,"dle/host/services/evidence.py,contracts/functions/k
 FR-VER-01;FR-FL-07;DLE-PRM-001,"dle/host/services/claim_extractor.py",tests/contract/prompts/test_claim_extractor.py,2,implemented
 FR-REL-01..04;DVSS-K04;DVSS-K08;DVSS-K11;DVSS-K12;DVSS-P04;DVSS-P12;DVSS-P13,"dle/host/services/scorer.py,dle/host/services/verifier.py,dle/host/services/release.py,contracts/functions/",tests/unit/host/services/test_verifier_and_scorer.py;tests/unit/host/services/test_release_and_receipts.py,2,implemented
 FR-RCPT-01..03;FR-API-08;IR-05,"dle/host/services/receipts.py,dle/tools/verify_receipt.py",tests/unit/host/services/test_release_and_receipts.py,2,implemented
+FR-WF-01;FR-API-04..08;FR-VER-01..03;FR-REL-01..04;FR-RCPT-01..03;GC-12;GC-13;GC-25,"dle/host/workflow/governed.py,dle/edge/gateway.py,dle/edge/composer.py,ui/src/components/",tests/unit/edge/test_gateway.py;tests/gemini_compat/test_python_sdk.py;tests/gemini_compat/js_sdk_compat.mjs;ui/src/stories.test.tsx,2,implemented

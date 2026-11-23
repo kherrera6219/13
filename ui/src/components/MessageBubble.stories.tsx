@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, within } from "@storybook/test";
+import { SAMPLE_GROUNDED_RUN } from "../fixtures/phase2";
 import {
   advisoryRun,
   errorRun,
@@ -48,4 +49,17 @@ export const ToolCallWaiting: Story = {
 
 export const ErrorState: Story = {
   args: { run: errorRun },
+};
+
+export const GroundedWithCitations: Story = {
+  args: {
+    run: SAMPLE_GROUNDED_RUN,
+    selected: true,
+    onSelectReceipt: () => {},
+  },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await expect(c.getByText(/Evidence Citations \(2\)/)).toBeVisible();
+    await expect(c.getByRole("button", { name: "Inspecting" })).toBeVisible();
+  },
 };

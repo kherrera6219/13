@@ -4,15 +4,21 @@ Runs the unmodified Google GenAI Python SDK against a live local DLE middleware
 server backed by ``FakeUpstream`` per ``docs/test/gemini_compat_test_plan.md``.
 """
 
+import base64
 import json
+import time
+import zipfile
+from io import BytesIO
 
 import httpx
 import pytest
 from google import genai
 from google.genai import errors, types
 
+from dle.config import canonicalize_jcs
 from dle.edge.sessions import resolve_session_id, session_id_after_response
-from tests.gemini_compat.conftest import COMPAT_TEST_KEY, _LiveMiddlewareServer
+from dle.host.services.receipts import verify_ed25519_signature
+from tests.gemini_compat.conftest import COMPAT_ADMIN_KEY, COMPAT_TEST_KEY, _LiveMiddlewareServer
 
 
 def _make_client(
@@ -295,6 +301,113 @@ def test_gc11_rate_limit_429_retry(compat_server: _LiveMiddlewareServer) -> None
     assert len(compat_server.upstream.recorded_requests) >= 2
 
 
+def test_gc12_governed_grounding_metadata_parse(compat_server: _LiveMiddlewareServer) -> None:
+    """GC-12: Governed released response exposes GroundingMetadata and signed 3.8.0 receipt."""
+    clause = (
+        "Container lot C-42 requires dual pressure relief valves "
+        "certified under ISO 9001 before hazardous transit."
+    )
+    with httpx.Client() as raw_http:
+        reset = raw_http.post(
+            f"{compat_server.base_url}/admin/drift/reset",
+            headers={"X-DLE-Admin-Key": COMPAT_ADMIN_KEY},
+            json={"calibrationArtifactId": "cal-phase2-dev-001", "confirm": "RESET"},
+        )
+        assert reset.status_code == 204
+        reg = raw_http.post(
+            f"{compat_server.base_url}/admin/sources",
+            headers={"X-DLE-Admin-Key": COMPAT_ADMIN_KEY},
+            json={
+                "title": "Hazardous Container Transit Spec",
+                "authorityClass": "primary_text",
+                "content": {
+                    "mimeType": "text/plain",
+                    "data": base64.b64encode(clause.encode("utf-8")).decode("ascii"),
+                },
+            },
+        )
+        assert reg.status_code == 201
+
+    with _make_client(compat_server.base_url) as client:
+        res = client.models.generate_content(
+            model="dle-13axis-strict",
+            contents=clause,
+        )
+    assert res.candidates is not None and len(res.candidates) >= 1
+    cand = res.candidates[0]
+    assert cand.finish_reason == types.FinishReason.STOP
+    assert cand.grounding_metadata is not None
+    assert cand.grounding_metadata.grounding_chunks
+    assert cand.grounding_metadata.grounding_supports
+
+    with httpx.Client() as raw_http:
+        rest_res = raw_http.post(
+            f"{compat_server.base_url}/v1beta/models/dle-13axis-strict:generateContent",
+            headers={"x-goog-api-key": COMPAT_TEST_KEY},
+            json={"contents": [{"role": "user", "parts": [{"text": clause}]}]},
+        )
+        assert rest_res.status_code == 200
+        assert rest_res.headers["X-DLE-Release-Mode"] == "released"
+        rcpt_id = rest_res.headers["X-DLE-Receipt"]
+        rcpt_res = raw_http.get(
+            f"{compat_server.base_url}/v1/receipts/{rcpt_id}",
+            headers={"x-goog-api-key": COMPAT_TEST_KEY},
+        )
+        assert rcpt_res.status_code == 200
+        rcpt_json = rcpt_res.json()
+        assert rcpt_json["payload"]["schema_version"] == "3.8.0"
+
+        exp_res = raw_http.post(
+            f"{compat_server.base_url}/admin/receipts/export",
+            headers={"X-DLE-Admin-Key": COMPAT_ADMIN_KEY},
+            json={"from": "2020-01-01T00:00:00Z", "to": "2035-01-01T00:00:00Z"},
+        )
+        assert exp_res.status_code == 200
+        with zipfile.ZipFile(BytesIO(exp_res.content)) as zf:
+            pub_keys = json.loads(zf.read("public_keys.json"))
+            env = rcpt_json["envelope"]
+            assert verify_ed25519_signature(
+                canonical_payload_bytes=canonicalize_jcs(rcpt_json["payload"]),
+                signature_b64=env["signature_b64"],
+                public_key_b64=pub_keys[env["key_id"]],
+            )
+
+
+def test_gc13_governed_held_answer_stop_and_headers(compat_server: _LiveMiddlewareServer) -> None:
+    """GC-13: Governed hold returns 200 STOP notice text, held header, and signed hold receipt."""
+    ungrounded_claim = (
+        "Unverified orbital cargo schedules guarantee instantaneous transoceanic delivery."
+    )
+    with _make_client(compat_server.base_url) as client:
+        res = client.models.generate_content(
+            model="dle-13axis-strict",
+            contents=ungrounded_claim,
+        )
+    assert res.candidates is not None and len(res.candidates) >= 1
+    assert res.candidates[0].finish_reason == types.FinishReason.STOP
+    assert res.text is not None and len(res.text.strip()) > 0
+
+    with httpx.Client() as raw_http:
+        rest_res = raw_http.post(
+            f"{compat_server.base_url}/v1beta/models/dle-13axis-strict:generateContent",
+            headers={"x-goog-api-key": COMPAT_TEST_KEY},
+            json={"contents": [{"role": "user", "parts": [{"text": ungrounded_claim}]}]},
+        )
+        assert rest_res.status_code == 200
+        assert rest_res.headers["X-DLE-Release-Mode"] == "held"
+        rcpt_id = rest_res.headers["X-DLE-Receipt"]
+        assert len(rcpt_id) == 36
+        rcpt_res = raw_http.get(
+            f"{compat_server.base_url}/v1/receipts/{rcpt_id}",
+            headers={"x-goog-api-key": COMPAT_TEST_KEY},
+        )
+        assert rcpt_res.status_code == 200
+        assert rcpt_res.json()["payload"]["decision"]["release_mode"] in {
+            "hard_veto_block",
+            "abstained",
+        }
+
+
 def test_gc14_function_calling_single(compat_server: _LiveMiddlewareServer) -> None:
     """GC-14: Single functionCall returned unchanged and functionResponse accepted."""
     decl = types.FunctionDeclaration(
@@ -533,6 +646,50 @@ def test_gc24_large_context(compat_server: _LiveMiddlewareServer) -> None:
         )
     assert res.usage_metadata is not None
     assert (res.usage_metadata.prompt_token_count or 0) >= 500_000
+
+
+def test_gc25_governed_stream_cancellation_records_receipt(
+    compat_server: _LiveMiddlewareServer,
+) -> None:
+    """GC-25: Aborting a governed SSE stream mid-flight records a 'cancelled' receipt."""
+    compat_server.upstream.delay_s = 1.2
+    try:
+        with (
+            httpx.Client() as raw_http,
+            raw_http.stream(
+                "POST",
+                f"{compat_server.base_url}/v1beta/models/dle-13axis-strict:streamGenerateContent",
+                params={"alt": "sse"},
+                headers={"x-goog-api-key": COMPAT_TEST_KEY},
+                json={
+                    "contents": [
+                        {
+                            "role": "user",
+                            "parts": [{"text": "Slow governed stream cancellation probe."}],
+                        }
+                    ]
+                },
+            ) as resp,
+        ):
+            assert resp.status_code == 200
+            first_bytes = next(resp.iter_bytes())
+            assert first_bytes == b"\n\n"
+    finally:
+        compat_server.upstream.delay_s = 0.0
+
+    deadline = time.monotonic() + 2.0
+    cancelled_rows: list[dict[str, object]] = []
+    while time.monotonic() < deadline:
+        rows = compat_server.app.state.dle.receipt_repo.list_receipts_between(
+            "2020-01-01T00:00:00Z",
+            "2035-01-01T00:00:00Z",
+        )
+        cancelled_rows = [row for row in rows if row.get("release_mode") == "cancelled"]
+        if cancelled_rows:
+            break
+        time.sleep(0.05)
+
+    assert len(cancelled_rows) >= 1
 
 
 def test_gc26_unknown_future_fields_and_rest_headers(

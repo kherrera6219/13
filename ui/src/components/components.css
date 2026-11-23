@@ -202,3 +202,198 @@
   height: 16px;
   accent-color: var(--dle-accent);
 }
+
+.dle-bubble--selected {
+  border-color: var(--dle-accent);
+}
+
+.dle-citations {
+  margin-top: var(--dle-space-1);
+  padding-top: var(--dle-space-2);
+  border-top: 1px solid var(--dle-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--dle-space-2);
+}
+
+.dle-citations-heading {
+  margin: 0;
+  font-size: var(--dle-text-xs);
+  font-weight: var(--dle-weight-strong);
+  color: var(--dle-text-muted);
+}
+
+.dle-citations-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--dle-space-1);
+}
+
+.dle-citation-item {
+  border: 1px solid var(--dle-border);
+  border-radius: var(--dle-radius-sm);
+  background-color: var(--dle-bg);
+  padding: var(--dle-space-2);
+}
+
+.dle-citation-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dle-space-2);
+  width: 100%;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: var(--dle-text);
+  font-family: var(--dle-font-sans);
+  font-size: var(--dle-text-xs);
+  font-weight: var(--dle-weight-strong);
+  text-align: left;
+  cursor: pointer;
+}
+
+.dle-citation-detail {
+  margin-top: var(--dle-space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--dle-space-1);
+  font-size: var(--dle-text-xs);
+  color: var(--dle-text-muted);
+}
+
+.dle-citation-excerpt {
+  margin: 0;
+  padding-left: var(--dle-space-2);
+  border-left: 2px solid var(--dle-border);
+  color: var(--dle-text);
+}
+
+.dle-panel-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dle-space-2);
+  padding-top: var(--dle-space-3);
+  border-top: 1px solid var(--dle-border);
+}
+
+.dle-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dle-space-2);
+}
+
+.dle-panel-header h3 {
+  margin: 0;
+  font-size: var(--dle-text-sm);
+  font-weight: var(--dle-weight-strong);
+}
+
+.dle-table-wrap {
+  overflow-x: auto;
+}
+
+.dle-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--dle-text-xs);
+}
+
+.dle-table caption {
+  text-align: left;
+  font-weight: var(--dle-weight-strong);
+  color: var(--dle-text-muted);
+  margin-bottom: var(--dle-space-1);
+}
+
+.dle-table th,
+.dle-table td {
+  padding: var(--dle-space-2);
+  border-bottom: 1px solid var(--dle-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.dle-table th {
+  color: var(--dle-text-muted);
+  font-weight: var(--dle-weight-strong);
+}
+
+.dle-status-tag {
+  display: inline-block;
+  padding: 1px var(--dle-space-2);
+  border-radius: var(--dle-radius-sm);
+  border: 1px solid var(--dle-border);
+  font-size: var(--dle-text-xs);
+  font-weight: var(--dle-weight-strong);
+}
+
+.dle-status-tag--supported {
+  color: var(--dle-released);
+  border-color: var(--dle-released);
+}
+
+.dle-status-tag--weak {
+  color: var(--dle-advisory);
+  border-color: var(--dle-advisory);
+}
+
+.dle-status-tag--contradicted,
+.dle-status-tag--unverified {
+  color: var(--dle-held);
+  border-color: var(--dle-held);
+}
+
+.dle-pre {
+  margin: 0;
+  padding: var(--dle-space-2);
+  border: 1px solid var(--dle-border);
+  border-radius: var(--dle-radius-sm);
+  background-color: var(--dle-bg);
+  color: var(--dle-text);
+  font-size: var(--dle-text-xs);
+  max-height: 220px;
+  overflow: auto;
+}
+
+.dle-admin-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dle-space-4);
+  width: 100%;
+}
+
+.dle-admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dle-space-3);
+  padding: var(--dle-space-4);
+  border: 1px solid var(--dle-border);
+  border-radius: var(--dle-radius-md);
+  background-color: var(--dle-surface);
+}
+
+.dle-admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--dle-space-3);
+}
+
+.dle-field-label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dle-space-1);
+  font-size: var(--dle-text-xs);
+  font-weight: var(--dle-weight-strong);
+}
+
+.dle-muted {
+  margin: 0;
+  font-size: var(--dle-text-xs);
+  color: var(--dle-text-muted);
+}

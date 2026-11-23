@@ -59,6 +59,7 @@ class ResponseComposer:
         notice_id: str | None = None,
         notice_context: Mapping[str, object] | None = None,
         hold_reason: str | None = None,
+        rendered_body_complete: bool = False,
     ) -> tuple[dict[str, object], dict[str, str]]:
         """Compose a governed Gemini response body and matching ``X-DLE-*`` headers."""
         ctx = dict(notice_context) if notice_context is not None else {}
@@ -68,6 +69,9 @@ class ResponseComposer:
             "X-DLE-Tier": str(tier),
             "X-DLE-API-Version": DLE_API_VERSION,
         }
+
+        if rendered_body_complete and body is not None:
+            return copy.deepcopy({str(k): v for k, v in body.items()}), headers
 
         if release_mode == "held":
             eff_notice_id = notice_id or "NOTICE-HOLD-07"

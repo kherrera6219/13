@@ -1,14 +1,26 @@
-import { useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import "./App.css";
 import { ChatComposer, type ComposerSubmitPayload } from "./components/ChatComposer";
+import { ClaimsTable } from "./components/ClaimsTable";
 import { MessageBubble } from "./components/MessageBubble";
-import { fetchHealth, formatFriendlyError, sendChatMessage } from "./lib/dleClient";
-import type { ChatRun, DleHeaders, HealthStatus } from "./types/dle";
+import { ReceiptViewer } from "./components/ReceiptViewer";
+import { SourceRegistryTable } from "./components/SourceRegistryTable";
+import {
+  fetchHealth,
+  fetchSources,
+  formatFriendlyError,
+  registerSource,
+  sendChatMessage,
+  type RegisterSourceInput,
+} from "./lib/dleClient";
+import type { ChatRun, DleHeaders, EvidenceSource, HealthStatus } from "./types/dle";
 
 const SESSION_KEY_STORAGE = "dle_client_key";
+const SESSION_ADMIN_STORAGE = "dle_admin_key";
 
 export function App() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [activeTab, setActiveTab] = useState<"chat" | "sources">("chat");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [apiKey, setApiKey] = useState(() => {
     if (typeof window !== "undefined") {
@@ -16,15 +28,30 @@ export function App() {
     }
     return "";
   });
+  const [adminKey, setAdminKey] = useState(() => {
+    if (typeof window !== "undefined") {
+      return window.sessionStorage.getItem(SESSION_ADMIN_STORAGE) ?? "";
+    }
+    return "";
+  });
   const [sessionOverride, setSessionOverride] = useState("");
   const [runs, setRuns] = useState<ChatRun[]>([]);
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [latestHeaders, setLatestHeaders] = useState<DleHeaders | null>(null);
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const [healthError, setHealthError] = useState<string | null>(null);
 
+  const [sources, setSources] = useState<EvidenceSource[]>([]);
+  const [sourcesLoading, setSourcesLoading] = useState(false);
+  const [sourcesError, setSourcesError] = useState<string | null>(null);
+  const [sourcesStatus, setSourcesStatus] = useState<string | null>(null);
+
   const keyInputId = useId();
+  const adminKeyInputId = useId();
   const sessionInputId = useId();
+  const chatTabId = useId();
+  const sourcesTabId = useId();
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "http://127.0.0.1:8740";
 
   useEffect(() => {
@@ -52,6 +79,30 @@ export function App() {
     };
   }, [baseUrl]);
 
+  const loadSources = useCallback(async () => {
+    const effectiveKey = apiKey.trim();
+    if (!effectiveKey) {
+      setSourcesError("Enter your Middleware Client API Key in Settings to list sources.");
+      return;
+    }
+    setSourcesLoading(true);
+    setSourcesError(null);
+    try {
+      const res = await fetchSources(baseUrl, effectiveKey);
+      setSources(res.sources);
+    } catch (err) {
+      setSourcesError(formatFriendlyError(err));
+    } finally {
+      setSourcesLoading(false);
+    }
+  }, [apiKey, baseUrl]);
+
+  useEffect(() => {
+    if (activeTab === "sources" && apiKey.trim().length > 0) {
+      void loadSources();
+    }
+  }, [activeTab, apiKey, loadSources]);
+
   const handleKeyChange = (val: string) => {
     setApiKey(val);
     if (typeof window !== "undefined") {
@@ -60,6 +111,38 @@ export function App() {
       } else {
         window.sessionStorage.removeItem(SESSION_KEY_STORAGE);
       }
+    }
+  };
+
+  const handleAdminKeyChange = (val: string) => {
+    setAdminKey(val);
+    if (typeof window !== "undefined") {
+      if (val) {
+        window.sessionStorage.setItem(SESSION_ADMIN_STORAGE, val);
+      } else {
+        window.sessionStorage.removeItem(SESSION_ADMIN_STORAGE);
+      }
+    }
+  };
+
+  const handleRegisterSource = async (input: RegisterSourceInput) => {
+    const effectiveAdmin = adminKey.trim();
+    if (!effectiveAdmin) {
+      setSourcesError("Open Settings and enter your Middleware Admin Key (X-DLE-Admin-Key) first.");
+      return;
+    }
+    setSourcesError(null);
+    setSourcesStatus(null);
+    try {
+      const created = await registerSource(baseUrl, effectiveAdmin, input);
+      setSourcesStatus(`Registered "${created.title}" (${created.authorityClass}).`);
+      if (apiKey.trim()) {
+        await loadSources();
+      } else {
+        setSources((prev) => [created, ...prev]);
+      }
+    } catch (err) {
+      setSourcesError(formatFriendlyError(err));
     }
   };
 
@@ -120,6 +203,9 @@ export function App() {
       });
       setLatestHeaders(result.headers);
       setRuns([...nextHistory, result.run]);
+      if (result.run.receiptId) {
+        setSelectedRunId(result.run.id);
+      }
     } catch (err) {
       const friendly = formatFriendlyError(err);
       const errRun: ChatRun = {
@@ -140,6 +226,13 @@ export function App() {
     }
   };
 
+  const assistantRuns = runs.filter((r) => r.role === "assistant");
+  const inspectedRun =
+    assistantRuns.find((r) => r.id === selectedRunId) ??
+    [...assistantRuns].reverse().find((r) => r.receiptId !== null) ??
+    assistantRuns[assistantRuns.length - 1] ??
+    null;
+
   const healthClass = healthError
     ? "dle-health-pill dle-health-pill--error"
     : health?.status === "ok"
@@ -149,7 +242,7 @@ export function App() {
   const healthText = healthError
     ? "Health: unreachable"
     : health
-      ? `Health: ${health.status} (${health.kernelFunctions} kernels)`
+      ? `Health: ${health.status} (${health.kernelFunctions} kernels · NLI ${health.nliLoaded ? "on" : "off"})`
       : "Health: checking";
 
   return (
@@ -159,6 +252,29 @@ export function App() {
           <h1 className="dle-brand-title">DataLogicEngine</h1>
           <span className="dle-brand-sub">13-Axis DVSS Control Plane</span>
         </div>
+
+        <nav className="dle-tablist" role="tablist" aria-label="Workspace views">
+          <button
+            id={chatTabId}
+            type="button"
+            role="tab"
+            className={activeTab === "chat" ? "dle-tab dle-tab--active" : "dle-tab"}
+            aria-selected={activeTab === "chat"}
+            onClick={() => setActiveTab("chat")}
+          >
+            Chat &amp; Inspector
+          </button>
+          <button
+            id={sourcesTabId}
+            type="button"
+            role="tab"
+            className={activeTab === "sources" ? "dle-tab dle-tab--active" : "dle-tab"}
+            aria-selected={activeTab === "sources"}
+            onClick={() => setActiveTab("sources")}
+          >
+            Sources Admin
+          </button>
+        </nav>
 
         <div className="dle-toolbar">
           <span className={healthClass} aria-live="polite">
@@ -196,6 +312,17 @@ export function App() {
                 onChange={(e) => handleKeyChange(e.target.value)}
               />
             </label>
+            <label className="dle-settings-field" htmlFor={adminKeyInputId}>
+              <span>Middleware Admin Key (loopback)</span>
+              <input
+                id={adminKeyInputId}
+                type="password"
+                className="dle-input dle-mono"
+                value={adminKey}
+                placeholder="Enter X-DLE-Admin-Key"
+                onChange={(e) => handleAdminKeyChange(e.target.value)}
+              />
+            </label>
             <label className="dle-settings-field" htmlFor={sessionInputId}>
               <span>Optional X-DLE-Session Override</span>
               <input
@@ -211,41 +338,76 @@ export function App() {
         </section>
       )}
 
-      <main className="dle-workspace">
-        <div className="dle-chat-column">
-          <section className="dle-transcript" aria-label="Conversation">
-            {runs.length === 0 ? (
-              <div className="dle-empty-state">
-                <h2>Ready for governed or pass-through inference</h2>
-                <p>
-                  Open Settings to supply your middleware client API key, choose a model, and send
-                  a prompt.
-                </p>
-              </div>
-            ) : (
-              runs.map((run) => <MessageBubble key={run.id} run={run} />)
-            )}
-          </section>
+      {activeTab === "chat" ? (
+        <main className="dle-workspace" role="tabpanel" aria-labelledby={chatTabId}>
+          <div className="dle-chat-column">
+            <section className="dle-transcript" aria-label="Conversation">
+              {runs.length === 0 ? (
+                <div className="dle-empty-state">
+                  <h2>Ready for governed or pass-through inference</h2>
+                  <p>
+                    Open Settings to supply your middleware client API key, register sources under
+                    Sources Admin if using governed strict mode, and send a prompt.
+                  </p>
+                </div>
+              ) : (
+                runs.map((run) => (
+                  <MessageBubble
+                    key={run.id}
+                    run={run}
+                    selected={inspectedRun?.id === run.id}
+                    onSelectReceipt={(selected) => setSelectedRunId(selected.id)}
+                  />
+                ))
+              )}
+            </section>
 
-          <ChatComposer sending={sending} onSubmit={handleSubmit} />
-        </div>
+            <ChatComposer sending={sending} onSubmit={handleSubmit} />
+          </div>
 
-        <aside className="dle-inspector" aria-label="Latest response headers">
-          <h2>Response Inspector</h2>
-          <dl className="dle-dl">
-            <dt>Release Mode</dt>
-            <dd className="dle-mono">{latestHeaders?.releaseMode ?? "—"}</dd>
-            <dt>Receipt ID</dt>
-            <dd className="dle-mono">{latestHeaders?.receiptId ?? "—"}</dd>
-            <dt>Tier</dt>
-            <dd className="dle-mono">{latestHeaders?.tier ?? "—"}</dd>
-            <dt>API Version</dt>
-            <dd className="dle-mono">{latestHeaders?.apiVersion ?? "—"}</dd>
-            <dt>Drift Latch</dt>
-            <dd className="dle-mono">{health?.driftLatch ?? "—"}</dd>
-          </dl>
-        </aside>
-      </main>
+          <aside className="dle-inspector" aria-label="Run Inspector">
+            <h2>Run Inspector</h2>
+            <dl className="dle-dl">
+              <dt>Release Mode</dt>
+              <dd className="dle-mono">{inspectedRun?.releaseMode ?? latestHeaders?.releaseMode ?? "—"}</dd>
+              <dt>Receipt ID</dt>
+              <dd className="dle-mono">{inspectedRun?.receiptId ?? latestHeaders?.receiptId ?? "—"}</dd>
+              <dt>Tier</dt>
+              <dd className="dle-mono">{inspectedRun?.tier ?? latestHeaders?.tier ?? "—"}</dd>
+              <dt>API Version</dt>
+              <dd className="dle-mono">{latestHeaders?.apiVersion ?? "—"}</dd>
+              <dt>NLI Loaded</dt>
+              <dd className="dle-mono">{health ? (health.nliLoaded ? "yes" : "no") : "—"}</dd>
+              <dt>Drift Latch</dt>
+              <dd className="dle-mono">{health?.driftLatch ?? "—"}</dd>
+            </dl>
+
+            <ClaimsTable claims={inspectedRun?.claims ?? []} />
+            <ReceiptViewer receipt={inspectedRun?.receipt ?? null} />
+          </aside>
+        </main>
+      ) : (
+        <main className="dle-admin-workspace" role="tabpanel" aria-labelledby={sourcesTabId}>
+          {sourcesError && (
+            <div role="alert" className="dle-banner dle-banner--error">
+              {sourcesError}
+            </div>
+          )}
+          {sourcesStatus && (
+            <div role="status" className="dle-banner dle-banner--ok">
+              {sourcesStatus}
+            </div>
+          )}
+          <SourceRegistryTable
+            sources={sources}
+            loading={sourcesLoading}
+            onRefresh={() => void loadSources()}
+            onRegister={handleRegisterSource}
+          />
+        </main>
+      )}
     </div>
   );
 }
+
+export default App;

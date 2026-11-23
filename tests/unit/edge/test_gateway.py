@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import json
 import zipfile
 from io import BytesIO
@@ -10,10 +11,12 @@ from pathlib import Path
 import httpx
 import pytest
 
-from dle.config import load_config
+from dle.config import canonicalize_jcs, load_config
 from dle.edge import GatewaySettings, create_app
 from dle.errors import ModelUnavailable, UnsafeBindError, UpstreamApiError
+from dle.host.services.receipts import verify_ed25519_signature
 from dle.models import FakeModel
+from dle.observability import sha256_text
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
@@ -88,6 +91,7 @@ async def test_healthz_generate_stream_count_tokens_and_error_mapping():
         assert h_json["status"] == "ok"
         assert h_json["kernelFunctions"] == 12
         assert h_json["driftLatch"] == "clear"
+        assert h_json["nliLoaded"] is True
 
         gen = await client.post(
             "/v1beta/models/gemini-4-carbon:generateContent",
@@ -143,7 +147,13 @@ async def test_admin_routes_receipts_and_static_ui_serving(tmp_path):
     ui_dir.mkdir()
     (ui_dir / "index.html").write_text("<html><body>DLE UI</body></html>", encoding="utf-8")
 
-    app = create_app(settings=_make_settings(ui_dist_dir=ui_dir))
+    app = create_app(
+        settings=_make_settings(
+            ui_dist_dir=ui_dir,
+            data_dir=tmp_path / "data",
+            keys_dir=tmp_path / "keys",
+        )
+    )
     app.state.dle.registry.drift_latched = True
 
     transport = httpx.ASGITransport(app=app)
@@ -183,9 +193,17 @@ async def test_admin_routes_receipts_and_static_ui_serving(tmp_path):
             },
         )
         assert src.status_code == 201
+        src_json = src.json()
+        assert src_json["authorityClass"] == "industry_practice"
+        assert len(src_json["sourceId"]) == 36
         listed = await client.get("/v1/sources", headers=client_headers)
         assert listed.status_code == 200
         assert len(listed.json()["sources"]) == 1
+
+        rotate = await client.post("/admin/keys/rotate", headers=admin_headers)
+        assert rotate.status_code == 200
+        assert "keyId" in rotate.json()
+        assert "validFrom" in rotate.json()
 
         exp = await client.post(
             "/admin/receipts/export",
@@ -195,6 +213,7 @@ async def test_admin_routes_receipts_and_static_ui_serving(tmp_path):
         assert exp.status_code == 200
         with zipfile.ZipFile(BytesIO(exp.content)) as zf:
             assert "manifest.json" in zf.namelist()
+            assert "public_keys.json" in zf.namelist()
 
         bad_rcpt = await client.get("/v1/receipts/not-a-uuid", headers=client_headers)
         assert bad_rcpt.status_code == 400
@@ -206,31 +225,82 @@ async def test_admin_routes_receipts_and_static_ui_serving(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_governed_stub_fail_closed_sse_keepalives_and_tool_parking():
-    """T-UNIT-EDGE-10: governed stub, fail-closed hold, keepalive SSE, and tool park/resume."""
+async def test_governed_stub_fail_closed_sse_keepalives_and_tool_parking(tmp_path):
+    """T-UNIT-EDGE-10: Phase 2 governed release/hold, receipts, SSE keepalive, and tool park."""
     fake = FakeModel(delay_s=0.06)
     app = create_app(
-        settings=_make_settings(keepalive_interval_s=0.02),
+        settings=_make_settings(
+            keepalive_interval_s=0.02,
+            data_dir=tmp_path / "data",
+            keys_dir=tmp_path / "keys",
+        ),
         model_port=fake,
     )
     transport = httpx.ASGITransport(app=app)
     headers = {"x-goog-api-key": "test-client-key"}
+    admin_headers = {"X-DLE-Admin-Key": "test-admin-key"}
+    clause = (
+        "Dual-redundant pressure relief valves certified under ISO 9001 "
+        "are required for shipping widgets."
+    )
 
     async with httpx.AsyncClient(transport=transport, base_url="http://127.0.0.1:8740") as client:
+        reg = await client.post(
+            "/admin/sources",
+            headers=admin_headers,
+            json={
+                "title": "Valve Compliance Spec",
+                "authorityClass": "primary_text",
+                "content": {
+                    "mimeType": "text/plain",
+                    "data": base64.b64encode(clause.encode("utf-8")).decode("ascii"),
+                },
+            },
+        )
+        assert reg.status_code == 201
+
         gov = await client.post(
             "/v1beta/models/dle-13axis-strict:generateContent",
             headers=headers,
-            json={"contents": [{"role": "user", "parts": [{"text": "governed prompt"}]}]},
+            json={"contents": [{"role": "user", "parts": [{"text": clause}]}]},
         )
         assert gov.status_code == 200
-        assert gov.headers["X-DLE-Release-Mode"] == "released_advisory"
-        assert gov.headers["X-DLE-Tier"] == "1"
-        assert len(gov.headers["X-DLE-Receipt"]) == 36
+        assert gov.headers["X-DLE-Release-Mode"] == "released"
+        assert gov.headers["X-DLE-Tier"] in {"1", "2", "3"}
+        rcpt_id = gov.headers["X-DLE-Receipt"]
+        assert len(rcpt_id) == 36
+        gov_json = gov.json()
+        cand0 = gov_json["candidates"][0]
+        assert cand0["finishReason"] == "STOP"
+        assert cand0["groundingMetadata"]["groundingChunks"]
+        cand_text = cand0["content"]["parts"][0]["text"]
+
+        rcpt_resp = await client.get(f"/v1/receipts/{rcpt_id}", headers=headers)
+        assert rcpt_resp.status_code == 200
+        rcpt_json = rcpt_resp.json()
+        assert rcpt_json["payload"]["schema_version"] == "3.8.0"
+        assert rcpt_json["payload"]["decision"]["release_mode"] == "gate_passed"
+        assert rcpt_json["payload"]["response_sha256"] == sha256_text(cand_text)
+
+        exp_resp = await client.post(
+            "/admin/receipts/export",
+            headers=admin_headers,
+            json={"from": "2020-01-01T00:00:00Z", "to": "2035-01-01T00:00:00Z"},
+        )
+        assert exp_resp.status_code == 200
+        with zipfile.ZipFile(BytesIO(exp_resp.content)) as zf:
+            pub_keys = json.loads(zf.read("public_keys.json"))
+            env = rcpt_json["envelope"]
+            assert verify_ed25519_signature(
+                canonical_payload_bytes=canonicalize_jcs(rcpt_json["payload"]),
+                signature_b64=env["signature_b64"],
+                public_key_b64=pub_keys[env["key_id"]],
+            )
 
         gov_sse = await client.post(
             "/v1beta/models/dle-13axis-strict:streamGenerateContent?alt=sse",
             headers=headers,
-            json={"contents": [{"role": "user", "parts": [{"text": "streamed governed prompt"}]}]},
+            json={"contents": [{"role": "user", "parts": [{"text": clause}]}]},
         )
         assert gov_sse.status_code == 200
         assert gov_sse.text.startswith("\n\n")
@@ -238,7 +308,30 @@ async def test_governed_stub_fail_closed_sse_keepalives_and_tool_parking():
         gov_chunks = [
             json.loads(line[6:]) for line in gov_sse.text.splitlines() if line.startswith("data: ")
         ]
-        assert gov_chunks[-1]["dleMetadata"]["releaseMode"] == "released_advisory"
+        assert gov_chunks[-1]["dleMetadata"]["releaseMode"] == "released"
+
+        ungrounded = await client.post(
+            "/v1beta/models/dle-13axis-strict:generateContent",
+            headers=headers,
+            json={
+                "contents": [
+                    {
+                        "role": "user",
+                        "parts": [
+                            {
+                                "text": (
+                                    "Quantum orbital elevators launch "
+                                    "unconditionally every Tuesday."
+                                )
+                            }
+                        ],
+                    }
+                ]
+            },
+        )
+        assert ungrounded.status_code == 200
+        assert ungrounded.headers["X-DLE-Release-Mode"] == "held"
+        assert ungrounded.json()["candidates"][0]["finishReason"] == "STOP"
 
         fake.enqueue_error(ModelUnavailable("writer down"))
         held = await client.post(
@@ -250,6 +343,12 @@ async def test_governed_stub_fail_closed_sse_keepalives_and_tool_parking():
         assert held.headers["X-DLE-Release-Mode"] == "held"
         assert held.json()["candidates"][0]["finishReason"] == "STOP"
         assert "did not respond" in held.json()["candidates"][0]["content"]["parts"][0]["text"]
+        held_rcpt = await client.get(
+            f"/v1/receipts/{held.headers['X-DLE-Receipt']}",
+            headers=headers,
+        )
+        assert held_rcpt.status_code == 200
+        assert held_rcpt.json()["payload"]["decision"]["release_mode"] == "hard_veto_block"
 
         # Pass-through tool call parking and resume
         fake.enqueue_response(

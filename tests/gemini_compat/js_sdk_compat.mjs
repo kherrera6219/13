@@ -14,16 +14,18 @@ const { GoogleGenAI, Type } = require("@google/genai");
 
 const baseUrl = process.env.DLE_BASE_URL;
 const apiKey = process.env.DLE_API_KEY;
+const adminKey = process.env.DLE_ADMIN_KEY;
 assert.ok(baseUrl, "DLE_BASE_URL env var is required");
 assert.ok(apiKey, "DLE_API_KEY env var is required");
 
-function makeClient(overrideKey = apiKey, extraBody = undefined) {
+function makeClient(overrideKey = apiKey, extraBody = undefined, customFetch = undefined) {
   return new GoogleGenAI({
     apiKey: overrideKey,
     httpOptions: {
       baseUrl,
       apiVersion: "v1beta",
       ...(extraBody ? { extraBody } : {}),
+      ...(customFetch ? { fetch: customFetch } : {}),
       retryOptions: { attempts: 1 },
     },
   });
@@ -337,6 +339,62 @@ async function runSuite() {
     });
     assert.ok(futRes.text && futRes.text.length > 0);
     results.push("GC-26");
+  }
+
+  // GC-12 & GC-13 Governed release groundingMetadata + governed held response
+  if (adminKey) {
+    const resetResp = await fetch(`${baseUrl}/admin/drift/reset`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-DLE-Admin-Key": adminKey,
+      },
+      body: JSON.stringify({ calibrationArtifactId: "cal-phase2-dev-001", confirm: "RESET" }),
+    });
+    assert.equal(resetResp.status, 204);
+
+    const clause =
+      "Forklift bay F-18 enforces ANSI Z535 safety signage before pallet loading.";
+    const regResp = await fetch(`${baseUrl}/admin/sources`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-DLE-Admin-Key": adminKey,
+      },
+      body: JSON.stringify({
+        title: "Forklift Bay Safety Standard",
+        authorityClass: "primary_text",
+        content: {
+          mimeType: "text/plain",
+          data: Buffer.from(clause, "utf8").toString("base64"),
+        },
+      }),
+    });
+    assert.equal(regResp.status, 201);
+
+    let lastHeaders = null;
+    const govAi = makeClient(apiKey, undefined, async (reqInput, reqInit) => {
+      const resp = await fetch(reqInput, reqInit);
+      lastHeaders = resp.headers;
+      return resp;
+    });
+
+    const relRes = await govAi.models.generateContent({
+      model: "dle-13axis-strict",
+      contents: clause,
+    });
+    assert.equal(lastHeaders?.get("X-DLE-Release-Mode"), "released");
+    assert.ok((relRes.candidates?.[0]?.groundingMetadata?.groundingChunks?.length ?? 0) > 0);
+    results.push("GC-12");
+
+    const heldRes = await govAi.models.generateContent({
+      model: "dle-13axis-strict",
+      contents: "Speculative zero-gravity conveyor lanes bypass warehouse inspection.",
+    });
+    assert.equal(lastHeaders?.get("X-DLE-Release-Mode"), "held");
+    assert.equal(heldRes.candidates?.[0]?.finishReason, "STOP");
+    assert.ok(heldRes.text && heldRes.text.trim().length > 0);
+    results.push("GC-13");
   }
 
   console.log(JSON.stringify({ ok: true, passedCases: results }));

@@ -112,12 +112,68 @@
 .dle-workspace {
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-columns: minmax(0, 1fr) 360px;
   gap: var(--dle-space-5);
   width: 100%;
-  max-width: 1200px;
+  max-width: 1320px;
   margin: 0 auto;
   padding: var(--dle-space-5);
+}
+
+.dle-admin-workspace {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--dle-space-3);
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: var(--dle-space-5);
+}
+
+.dle-tablist {
+  display: flex;
+  align-items: center;
+  gap: var(--dle-space-1);
+}
+
+.dle-tab {
+  min-height: 32px;
+  padding: var(--dle-space-1) var(--dle-space-3);
+  border: 1px solid var(--dle-border);
+  border-radius: var(--dle-radius-sm);
+  background-color: var(--dle-bg);
+  color: var(--dle-text);
+  font-family: var(--dle-font-sans);
+  font-size: var(--dle-text-xs);
+  font-weight: var(--dle-weight-strong);
+  cursor: pointer;
+}
+
+.dle-tab--active {
+  background-color: var(--dle-accent);
+  border-color: var(--dle-accent);
+  color: var(--dle-on-accent);
+}
+
+.dle-banner {
+  padding: var(--dle-space-2) var(--dle-space-3);
+  border: 1px solid var(--dle-border);
+  border-radius: var(--dle-radius-sm);
+  font-size: var(--dle-text-xs);
+  font-weight: var(--dle-weight-strong);
+}
+
+.dle-banner--error {
+  color: var(--dle-error);
+  border-color: var(--dle-error);
+  background-color: var(--dle-surface);
+}
+
+.dle-banner--ok {
+  color: var(--dle-released);
+  border-color: var(--dle-released);
+  background-color: var(--dle-surface);
 }
 
 @media (max-width: 900px) {

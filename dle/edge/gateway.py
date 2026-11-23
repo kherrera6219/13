@@ -1,25 +1,23 @@
 """FastAPI Gemini-compatible gateway serving all routes in ``contracts/openapi.yaml``.
 
-Implements FR-API-01..02, IR-01..07, NFR-SEC-01..02, NFR-OBS-01, ADR-001, and
+Implements FR-API-01..08, IR-01..07, NFR-SEC-01..03, NFR-OBS-01, ADR-001, and
 ADR-011. Serves ``v1beta`` Gemini routes, ``/v1`` DLE endpoints, ``/admin``
 loopback-only routes, ``/healthz``, and static browser UI assets.
 """
 
 from __future__ import annotations
 
+import base64
+import binascii
 import copy
 import hmac
-import io
 import json
 import re
 import time
-import uuid
-import zipfile
 from collections.abc import AsyncIterator, Mapping
 from contextlib import asynccontextmanager
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import UTC, datetime
-from pathlib import Path
 
 from fastapi import FastAPI, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -44,9 +42,39 @@ from dle.errors import (
     UpstreamApiError,
 )
 from dle.host.functions import FunctionRegistry, register_phase1_functions
-from dle.host.workflow import run_governed_stub
-from dle.models import EgressClient, FakeModel, GeminiAdapter, ModelPort, ModelRegistry
+from dle.host.services import (
+    CalibrationArtifact,
+    ClaimExtractor,
+    ClaimVerifier,
+    Ed25519KeyManager,
+    EvidenceService,
+    ReceiptSealer,
+)
+from dle.host.workflow import (
+    DEFAULT_PHASE2_CALIBRATION,
+    run_governed_phase2,
+    seal_cancelled_receipt,
+)
+from dle.models import (
+    DeterministicLexicalNliScorer,
+    EgressClient,
+    EmbeddingService,
+    FakeModel,
+    GeminiAdapter,
+    ModelPort,
+    ModelRegistry,
+    NliScorer,
+    OnnxNliScorer,
+)
 from dle.observability import METRICS, get_logger, sha256_text
+from dle.store import (
+    EvidenceRepository,
+    OpsRepository,
+    ReceiptRepository,
+    SessionRepository,
+    StoreBundle,
+    open_stores,
+)
 
 _RECEIPT_ID_RE = re.compile(r"^[0-9a-f-]{36}$")
 _ADMIN_LOOPBACK_HOSTS: frozenset[str] = frozenset({"127.0.0.1", "::1", "localhost", "testclient"})
@@ -78,7 +106,7 @@ _VIRTUAL_MODELS_BY_ID: dict[str, dict[str, object]] = {
 
 @dataclass
 class GatewayRuntime:
-    """In-memory runtime container held on ``app.state.dle``."""
+    """Runtime container held on ``app.state.dle``."""
 
     settings: GatewaySettings
     config: DleConfig
@@ -88,9 +116,20 @@ class GatewayRuntime:
     function_registry: FunctionRegistry
     tool_bridge: ToolBridge
     composer: ResponseComposer
+    stores: StoreBundle
+    evidence_repo: EvidenceRepository
+    session_repo: SessionRepository
+    receipt_repo: ReceiptRepository
+    ops_repo: OpsRepository
+    embeddings: EmbeddingService
+    nli_scorer: NliScorer
+    evidence_service: EvidenceService
+    claim_extractor: ClaimExtractor
+    claim_verifier: ClaimVerifier
+    key_manager: Ed25519KeyManager
+    receipt_sealer: ReceiptSealer
+    calibration: CalibrationArtifact | None = DEFAULT_PHASE2_CALIBRATION
     egress: EgressClient | None = None
-    receipts: dict[str, dict[str, object]] = field(default_factory=dict)
-    sources: dict[str, dict[str, object]] = field(default_factory=dict)
 
 
 def gemini_error_response(http_status: int, message: str, status: str) -> JSONResponse:
@@ -177,12 +216,53 @@ async def _parse_json_object(request: Request) -> dict[str, object]:
     return {str(k): v for k, v in parsed.items()}
 
 
+def _decode_source_content(raw_content: object) -> str:
+    if isinstance(raw_content, str):
+        if not raw_content.strip():
+            raise ContractValidationError(
+                "source content string must not be empty",
+                file_path="request",
+                pointer="/content",
+            )
+        return raw_content
+    if isinstance(raw_content, Mapping):
+        b64_data = raw_content.get("data")
+        if not isinstance(b64_data, str) or not b64_data:
+            raise ContractValidationError(
+                "content.data must be a base64-encoded string",
+                file_path="request",
+                pointer="/content/data",
+            )
+        try:
+            decoded = base64.b64decode(b64_data, validate=True).decode("utf-8")
+        except (binascii.Error, UnicodeDecodeError) as exc:
+            raise ContractValidationError(
+                "content.data must be valid base64-encoded UTF-8 text",
+                file_path="request",
+                pointer="/content/data",
+            ) from exc
+        if not decoded.strip():
+            raise ContractValidationError(
+                "decoded source content must not be empty",
+                file_path="request",
+                pointer="/content/data",
+            )
+        return decoded
+    raise ContractValidationError(
+        "content must be a string or {mimeType, data} object",
+        file_path="request",
+        pointer="/content",
+    )
+
+
 def create_app(
     *,
     settings: GatewaySettings | None = None,
     config: DleConfig | None = None,
     model_port: ModelPort | None = None,
     registry: ModelRegistry | None = None,
+    calibration: CalibrationArtifact | None = DEFAULT_PHASE2_CALIBRATION,
+    nli_scorer: NliScorer | None = None,
 ) -> FastAPI:
     """Create and configure the FastAPI middleware application."""
     eff_settings = settings if settings is not None else GatewaySettings.from_env()
@@ -212,6 +292,29 @@ def create_app(
     else:
         eff_model_port = FakeModel(registry=eff_registry)
 
+    stores = open_stores(eff_settings.data_dir, enable_vec=True)
+    evidence_repo = EvidenceRepository(stores.evidence, vec_enabled=stores.vec_enabled)
+    session_repo = SessionRepository(stores.sessions)
+    receipt_repo = ReceiptRepository(stores.receipts)
+    ops_repo = OpsRepository(stores.ops)
+    embeddings = EmbeddingService(eff_model_port, eff_registry)
+
+    if nli_scorer is not None:
+        eff_nli: NliScorer = nli_scorer
+    elif eff_settings.nli_model_path is not None and eff_settings.nli_sha256:
+        eff_nli = OnnxNliScorer(
+            model_path=eff_settings.nli_model_path,
+            expected_sha256=eff_settings.nli_sha256,
+        )
+    else:
+        eff_nli = DeterministicLexicalNliScorer()
+
+    evidence_service = EvidenceService(evidence_repo, embeddings)
+    claim_extractor = ClaimExtractor(eff_model_port, eff_registry)
+    claim_verifier = ClaimVerifier(eff_nli, evidence_service)
+    key_manager = Ed25519KeyManager(receipt_repo, keys_dir=eff_settings.keys_dir)
+    receipt_sealer = ReceiptSealer(receipt_repo, key_manager)
+
     runtime = GatewayRuntime(
         settings=eff_settings,
         config=eff_config,
@@ -221,6 +324,19 @@ def create_app(
         function_registry=fn_registry,
         tool_bridge=tool_bridge,
         composer=composer,
+        stores=stores,
+        evidence_repo=evidence_repo,
+        session_repo=session_repo,
+        receipt_repo=receipt_repo,
+        ops_repo=ops_repo,
+        embeddings=embeddings,
+        nli_scorer=eff_nli,
+        evidence_service=evidence_service,
+        claim_extractor=claim_extractor,
+        claim_verifier=claim_verifier,
+        key_manager=key_manager,
+        receipt_sealer=receipt_sealer,
+        calibration=calibration,
         egress=egress,
     )
     log = get_logger("dle.edge.gateway")
@@ -232,6 +348,7 @@ def create_app(
         finally:
             if runtime.egress is not None:
                 await runtime.egress.aclose()
+            runtime.stores.close()
 
     app = FastAPI(
         title="DataLogicEngine 13-Axis Middleware API",
@@ -301,14 +418,18 @@ def create_app(
     async def healthz() -> dict[str, object]:
         reachable = await runtime.model_port.is_reachable()
         kernel_count = sum(1 for fn in runtime.config.functions.functions if fn.level == "kernel")
-        drift_state = "tripped" if runtime.registry.drift_latched else "clear"
-        status = "ok" if reachable and not runtime.registry.drift_latched else "degraded"
+        ops_drift = runtime.ops_repo.get_drift_state()
+        is_latched = runtime.registry.drift_latched or bool(
+            ops_drift is not None and ops_drift.get("is_latched")
+        )
+        drift_state = "tripped" if is_latched else "clear"
+        status = "ok" if reachable and not is_latched else "degraded"
         _record_http_metric("/healthz", 200)
         return {
             "status": status,
             "bind": f"{runtime.settings.bind_address}:{runtime.settings.port}",
             "modelReachable": reachable,
-            "nliLoaded": False,
+            "nliLoaded": runtime.nli_scorer.is_loaded,
             "driftLatch": drift_state,
             "kernelFunctions": kernel_count,
             "version": __version__,
@@ -376,7 +497,14 @@ def create_app(
             tenant=tenant,
             explicit_session=explicit_session,
         )
-        runtime.sessions.touch(run_req.session_id, tenant=tenant, model=run_req.model)
+        sess_rec = runtime.sessions.touch(run_req.session_id, tenant=tenant, model=run_req.model)
+        runtime.session_repo.touch_session(
+            session_id=run_req.session_id,
+            tenant=tenant,
+            model=run_req.model,
+            now_utc=sess_rec.last_seen_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            expires_utc=sess_rec.expires_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        )
 
         upstream_key = _upstream_key(runtime.settings, client_key)
         if not run_req.is_governed:
@@ -419,28 +547,36 @@ def create_app(
             )
             return JSONResponse(status_code=200, content=out_body, headers=headers)
 
-        stub_res = await run_governed_stub(
+        gov_res = await run_governed_phase2(
             run_req=run_req,
+            config=runtime.config,
             function_registry=runtime.function_registry,
             model_registry=runtime.registry,
             model_port=runtime.model_port,
+            evidence_service=runtime.evidence_service,
+            claim_extractor=runtime.claim_extractor,
+            claim_verifier=runtime.claim_verifier,
+            receipt_sealer=runtime.receipt_sealer,
+            ops_repo=runtime.ops_repo,
+            session_repo=runtime.session_repo,
+            calibration=runtime.calibration,
             api_key=upstream_key,
         )
         out_body, headers = runtime.composer.compose_governed(
-            release_mode=stub_res.release_mode,
-            receipt_id=stub_res.receipt_id,
-            tier=stub_res.tier,
-            body=stub_res.body,
-            notice_id=stub_res.notice_id,
-            notice_context=stub_res.notice_context,
-            hold_reason=stub_res.hold_reason,
+            release_mode=gov_res.release_mode,
+            receipt_id=gov_res.receipt_id,
+            tier=gov_res.tier,
+            body=gov_res.body,
+            notice_id=gov_res.notice_id,
+            hold_reason=gov_res.hold_reason,
+            rendered_body_complete=True,
         )
         _record_http_metric("/v1beta/models/{model}:generateContent", 200)
         log.info(
             "gateway.generate",
             route="/v1beta/models/{model}:generateContent",
             model=run_req.model,
-            release_mode=stub_res.release_mode,
+            release_mode=gov_res.release_mode,
             session_id=run_req.session_id,
             run_id=run_req.run_id,
             duration_ms=round((time.perf_counter() - start) * 1000.0, 3),
@@ -464,27 +600,52 @@ def create_app(
             is_streaming=True,
             alt=alt,
         )
-        runtime.sessions.touch(run_req.session_id, tenant=tenant, model=run_req.model)
+        sess_rec = runtime.sessions.touch(run_req.session_id, tenant=tenant, model=run_req.model)
+        runtime.session_repo.touch_session(
+            session_id=run_req.session_id,
+            tenant=tenant,
+            model=run_req.model,
+            now_utc=sess_rec.last_seen_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            expires_utc=sess_rec.expires_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        )
         upstream_key = _upstream_key(runtime.settings, client_key)
 
         if run_req.is_governed:
 
             async def _execute_governed_gate() -> tuple[dict[str, object], dict[str, str]]:
-                stub_res = await run_governed_stub(
+                gov_res = await run_governed_phase2(
                     run_req=run_req,
+                    config=runtime.config,
                     function_registry=runtime.function_registry,
                     model_registry=runtime.registry,
                     model_port=runtime.model_port,
+                    evidence_service=runtime.evidence_service,
+                    claim_extractor=runtime.claim_extractor,
+                    claim_verifier=runtime.claim_verifier,
+                    receipt_sealer=runtime.receipt_sealer,
+                    ops_repo=runtime.ops_repo,
+                    session_repo=runtime.session_repo,
+                    calibration=runtime.calibration,
                     api_key=upstream_key,
                 )
                 return runtime.composer.compose_governed(
-                    release_mode=stub_res.release_mode,
-                    receipt_id=stub_res.receipt_id,
-                    tier=stub_res.tier,
-                    body=stub_res.body,
-                    notice_id=stub_res.notice_id,
-                    notice_context=stub_res.notice_context,
-                    hold_reason=stub_res.hold_reason,
+                    release_mode=gov_res.release_mode,
+                    receipt_id=gov_res.receipt_id,
+                    tier=gov_res.tier,
+                    body=gov_res.body,
+                    notice_id=gov_res.notice_id,
+                    hold_reason=gov_res.hold_reason,
+                    rendered_body_complete=True,
+                )
+
+            def _on_cancel() -> None:
+                seal_cancelled_receipt(
+                    run_req=run_req,
+                    config=runtime.config,
+                    function_registry=runtime.function_registry,
+                    model_registry=runtime.registry,
+                    receipt_sealer=runtime.receipt_sealer,
+                    calibration=runtime.calibration,
                 )
 
             if alt == "sse":
@@ -493,6 +654,7 @@ def create_app(
                     stream_governed_sse(
                         _execute_governed_gate(),
                         keepalive_interval_s=runtime.settings.keepalive_interval_s,
+                        on_cancel=_on_cancel,
                     ),
                     media_type="text/event-stream",
                     headers={
@@ -524,7 +686,6 @@ def create_app(
         )
 
         if alt == "sse":
-            # Pull first chunk before opening StreamingResponse so 4xx/503 map to HTTP errors.
             first_chunk = await anext(stream_iter, None)
             headers["Cache-Control"] = "no-cache"
 
@@ -570,7 +731,7 @@ def create_app(
                 file_path="request",
                 pointer="/receiptId",
             )
-        stored = runtime.receipts.get(receiptId)
+        stored = runtime.receipt_sealer.get_receipt(receiptId)
         if stored is None:
             _record_http_metric("/v1/receipts/{receiptId}", 404)
             return gemini_error_response(404, f"receipt {receiptId} not found", "NOT_FOUND")
@@ -586,18 +747,22 @@ def create_app(
         request: Request,
         pageToken: str | None = Query(default=None),
     ) -> JSONResponse:
-        del pageToken
         _tenant, _key = _require_client_auth(request, runtime.settings)
+        offset = int(pageToken) if pageToken is not None and pageToken.isdigit() else 0
+        sources, next_tok = runtime.evidence_repo.list_sources(limit=50, offset=offset)
+        body: dict[str, object] = {"sources": sources}
+        if next_tok is not None:
+            body["nextPageToken"] = next_tok
         _record_http_metric("/v1/sources", 200)
         return JSONResponse(
             status_code=200,
-            content={"sources": list(runtime.sources.values())},
+            content=body,
             headers={"X-DLE-API-Version": DLE_API_VERSION},
         )
 
     @app.post("/admin/sources")
     async def register_source(request: Request) -> JSONResponse:
-        _admin = _require_admin_auth(request, runtime.settings)
+        admin_id = _require_admin_auth(request, runtime.settings)
         raw_body = await _parse_json_object(request)
         for required_key in ("title", "authorityClass", "content"):
             if required_key not in raw_body:
@@ -606,17 +771,30 @@ def create_app(
                     file_path="request",
                     pointer=f"/{required_key}",
                 )
-        source_id = str(uuid.uuid4())
-        record: dict[str, object] = {
-            "sourceId": source_id,
-            "title": str(raw_body["title"]),
-            "authorityClass": str(raw_body["authorityClass"]),
-            "revision": "rev-1",
-            "validFrom": str(raw_body.get("validFrom") or datetime.now(UTC).date().isoformat()),
-            "validTo": raw_body.get("validTo"),
-            "retainable": bool(raw_body.get("retainable", True)),
-        }
-        runtime.sources[source_id] = record
+        content_text = _decode_source_content(raw_body["content"])
+        valid_from = str(raw_body["validFrom"]) if raw_body.get("validFrom") is not None else None
+        valid_to = str(raw_body["validTo"]) if raw_body.get("validTo") is not None else None
+        jurisdiction = (
+            str(raw_body["jurisdiction"]) if raw_body.get("jurisdiction") is not None else None
+        )
+        retainable = bool(raw_body.get("retainable", True))
+        upstream_api_key = runtime.settings.gemini_api_key or ""
+        record = await runtime.evidence_service.register_document(
+            title=str(raw_body["title"]),
+            authority_class=str(raw_body["authorityClass"]),
+            content_text=content_text,
+            jurisdiction=jurisdiction,
+            valid_from=valid_from,
+            valid_to=valid_to,
+            retainable=retainable,
+            api_key=upstream_api_key,
+        )
+        log.info(
+            "admin.source_registered",
+            admin_id=admin_id,
+            source_id=record["sourceId"],
+            authority_class=record["authorityClass"],
+        )
         _record_http_metric("/admin/sources", 201)
         return JSONResponse(
             status_code=201,
@@ -643,6 +821,16 @@ def create_app(
                 pointer="/confirm",
             )
         runtime.registry.reset_drift_latch()
+        cal = runtime.calibration or DEFAULT_PHASE2_CALIBRATION
+        runtime.ops_repo.upsert_drift_state(
+            c_t=0.0,
+            mu0=cal.mu_0,
+            delta=cal.drift_delta,
+            lambda_val=cal.drift_lambda,
+            is_latched=False,
+            latch_reason=None,
+            updated_utc=datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        )
         log.info(
             "admin.drift_reset",
             admin_id=admin_id,
@@ -654,15 +842,12 @@ def create_app(
     @app.post("/admin/keys/rotate")
     async def rotate_signing_key(request: Request) -> JSONResponse:
         admin_id = _require_admin_auth(request, runtime.settings)
-        new_key_id = f"ed25519-{datetime.now(UTC).strftime('%Y%m%d%H%M%S')}"
-        log.info("admin.key_rotate", admin_id=admin_id, key_id=new_key_id)
+        rotated = runtime.key_manager.rotate_key()
+        log.info("admin.key_rotate", admin_id=admin_id, key_id=rotated["keyId"])
         _record_http_metric("/admin/keys/rotate", 200)
         return JSONResponse(
             status_code=200,
-            content={
-                "keyId": new_key_id,
-                "validFrom": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
-            },
+            content={"keyId": rotated["keyId"], "validFrom": rotated["validFrom"]},
             headers={"X-DLE-API-Version": DLE_API_VERSION},
         )
 
@@ -676,18 +861,14 @@ def create_app(
                 file_path="request",
                 pointer="/",
             )
-        buf = io.BytesIO()
-        with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-            manifest = {
-                "from": raw_body["from"],
-                "to": raw_body["to"],
-                "receipts": [],
-                "exportedBy": admin_id,
-            }
-            zf.writestr("manifest.json", json.dumps(manifest))
+        archive = runtime.receipt_sealer.export_bundle(
+            str(raw_body["from"]),
+            str(raw_body["to"]),
+            exported_by=admin_id,
+        )
         _record_http_metric("/admin/receipts/export", 200)
         return Response(
-            content=buf.getvalue(),
+            content=archive,
             media_type="application/zip",
             headers={"X-DLE-API-Version": DLE_API_VERSION},
         )
@@ -707,11 +888,6 @@ def create_app(
 
 
 app = create_app()
-
-
-def _resolve_default_root(path: Path | None) -> Path:
-    return path if path is not None else Path.cwd()
-
 
 __all__ = [
     "DLE_API_VERSION",

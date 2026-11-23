@@ -2,6 +2,24 @@
 
 Running record for agents. Newest entry first. Keep each entry short: what changed, what was learned, what is next.
 
+## 2026-11-22 — Phase 2 Complete (Wave 2C: Gateway Wiring, Governed Compat GC-12/13/25, Inspector UI & Gate Report)
+
+**State.** Phase 2 (`FR-API-04..08`, `FR-VER-01..03`, `FR-REL-01..04`, `FR-RCPT-01..03`, `FR-UI-01..02`) is complete and cleared via `reports/phase2_gate.md` (`dle-middleware:phase2`). Full Phase 2 verify-and-gate execution replaces the Phase 1 stub across `dle/edge/gateway.py`, backed by persistent 5-DB SQLite + `sqlite-vec` stores, Ed25519/WORM Merkle 3.8.0 receipts, governed Python + JS Gemini SDK compatibility (`GC-12`/`13`/`25`), and the Browser Inspector UI (`CitationList`, `ClaimsTable`, `ReceiptViewer`, `SourceRegistryTable`).
+
+**Changed.**
+- `dle/host/workflow/governed.py`: Added `run_governed_phase2`, `seal_cancelled_receipt` (`GC-25`), and `DEFAULT_PHASE2_CALIBRATION` (`drift_lambda=4.0`), wiring H16 kernel functions (`DVSS-K01..K12`), `EvidenceService`, `ClaimExtractor`, `ClaimVerifier`, `compute_terminal_u`, `update_cusum_drift`, `evaluate_release_gate`, `apply_disclosure`, and fail-closed schema-3.8.0 `ReceiptSealer`.
+- `dle/edge/{composer.py,settings.py,gateway.py}`: Wired 5-DB `StoreBundle`, repositories, `EmbeddingService`, `OnnxNliScorer`/`DeterministicLexicalNliScorer`, `/healthz` (`nliLoaded`), `/v1/receipts/{receiptId}`, `/v1/sources` pagination, `/admin/sources` base64 ingestion, `/admin/drift/reset`, `/admin/keys/rotate`, and `/admin/receipts/export`.
+- `dle/models/fake.py` & `tests/gemini_compat/fake_upstream.py`: Stripped synthetic `[model]` prefixes on `job="writer"` and handled `job="claim_extraction"` JSON replay so offline verification/NLI checks execute cleanly without spurious numeric conflicts.
+- `tests/unit/edge/test_gateway.py` & `tests/gemini_compat/{test_python_sdk.py,test_js_sdk.py,js_sdk_compat.mjs}`: Added governed release/hold/receipt signature checks plus `GC-12`, `GC-13`, and `GC-25` across Python (`google-genai==1.75.0`, 26/26) and JS (`@google/genai==3.6.1`, 24/24) SDKs.
+- `ui/`: Added `CitationList`, `ClaimsTable`, `ReceiptViewer`, `SourceRegistryTable`, `src/fixtures/phase2.ts`, `src/lib/dleClient.ts` receipt/citation/sources helpers, workspace tabs + admin key settings in `App.tsx`, and Storybook/axe checks in `src/stories.test.tsx` (30/30 passed).
+- Added `reports/phase2_gate.md`; updated `docs/traceability/rtm.csv` and `CHANGELOG.md`.
+
+**Learned.**
+- Setting `DEFAULT_PHASE2_CALIBRATION.drift_lambda=0.50` caused a single ungrounded non-binding prompt (`u ~ 0.95`) to accumulate `c_t ~ 0.88 > 0.50` before `evaluate_release_gate` and trip the server-wide drift latch immediately; raising `drift_lambda=4.0` preserves per-request `abstained`/`hard_veto_block` holds while latching after ~5 consecutive ungrounded queries.
+- Omitting `[gemini-4-carbon]` prefixes in `FakeModel` / `FakeUpstream` on `job="writer"` prevents the digit `"4"` in `gemini-4-carbon` from triggering `DeterministicLexicalNliScorer`'s numeric conflict rule against grounded ISO/numeric premises.
+
+**Next.** Execute **Phase 3 (13-Axis Address, Spine & Bounded Graph Retrieval)**: complete `H3` 13-axis coordinate builder/validator + `H4` Axis-13 `tle` matcher, bounded graph expansion `H6` (`DVSS-K07` / `K03`, <= 10% expansion overhead), and run the Phase 3 Warehouse Substitution domain pilot (`D4`).
+
 ## 2026-11-22 — Phase 2 Wave 2B: Extractor, Verifier, Scorer, Release Controller & Receipts (H10, H12..H15)
 
 **State.** Phase 2 Wave 2B complete. Claim extractor (`H10`), NLI verifier (`H12` / `DVSS-P04`), source-age & terminal `u` scorer (`H13` / `DVSS-K08`), release controller (`H14` / `DVSS-K04`, `K11`, `K12`, `P12`, `P13`), and Ed25519/JCS/WORM Merkle receipt sealer + offline CLI verifier (`H15` / `dle.tools.verify_receipt`) are implemented and verified alongside paired function contracts (`k04`, `k08`, `k11`, `k12`, `p04`, `p12`, `p13`) and Hypothesis property tests.

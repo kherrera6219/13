@@ -6,9 +6,13 @@ import axe from "axe-core";
 import type { ComponentType } from "react";
 import { describe, expect, it } from "vitest";
 import * as ChatComposerStories from "./components/ChatComposer.stories";
+import * as CitationListStories from "./components/CitationList.stories";
+import * as ClaimsTableStories from "./components/ClaimsTable.stories";
 import * as MessageBubbleStories from "./components/MessageBubble.stories";
 import * as ReceiptChipStories from "./components/ReceiptChip.stories";
+import * as ReceiptViewerStories from "./components/ReceiptViewer.stories";
 import * as ReleaseBadgeStories from "./components/ReleaseBadge.stories";
+import * as SourceRegistryTableStories from "./components/SourceRegistryTable.stories";
 
 type ComposedStory = ComponentType & {
   play?: (context: { canvasElement: HTMLElement }) => Promise<void> | void;
@@ -30,6 +34,22 @@ const storyGroups: Array<{ name: string; stories: Record<string, ComposedStory> 
   {
     name: "MessageBubble",
     stories: composeStories(MessageBubbleStories) as unknown as Record<string, ComposedStory>,
+  },
+  {
+    name: "CitationList",
+    stories: composeStories(CitationListStories) as unknown as Record<string, ComposedStory>,
+  },
+  {
+    name: "ClaimsTable",
+    stories: composeStories(ClaimsTableStories) as unknown as Record<string, ComposedStory>,
+  },
+  {
+    name: "ReceiptViewer",
+    stories: composeStories(ReceiptViewerStories) as unknown as Record<string, ComposedStory>,
+  },
+  {
+    name: "SourceRegistryTable",
+    stories: composeStories(SourceRegistryTableStories) as unknown as Record<string, ComposedStory>,
   },
 ];
 

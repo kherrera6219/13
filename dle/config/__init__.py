@@ -1,6 +1,6 @@
 """Typed configuration models, loader, and JCS policy digest (`FR-FN-03`)."""
 
-from dle.config.loader import compute_policy_digest, load_config
+from dle.config.loader import canonicalize_jcs, compute_policy_digest, load_config
 from dle.config.models import (
     ConsequentialFunctionFlag,
     DatedPrice,
@@ -53,6 +53,7 @@ __all__ = [
     "RoleConduct",
     "TierSpec",
     "TiersConfig",
+    "canonicalize_jcs",
     "compute_policy_digest",
     "load_config",
 ]

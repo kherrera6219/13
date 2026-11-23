@@ -149,6 +149,8 @@ class FakeModel:
         response_text: str
         if isinstance(gen_cfg, Mapping) and gen_cfg.get("responseMimeType") == "application/json":
             response_text = json.dumps({"echo": prompt_summary, "job": job})
+        elif job == "writer":
+            response_text = prompt_summary
         else:
             response_text = f"[{clean}] {prompt_summary}"
 

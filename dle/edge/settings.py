@@ -68,6 +68,10 @@ class GatewaySettings:
     gemini_api_key: str | None = None
     config_dir: Path = DEFAULT_CONFIG_DIR
     ui_dist_dir: Path | None = DEFAULT_UI_DIST_DIR
+    data_dir: Path | None = None
+    keys_dir: Path | None = None
+    nli_model_path: Path | None = None
+    nli_sha256: str | None = None
     keepalive_interval_s: float = 8.0
     cors_origins: tuple[str, ...] = (
         "http://127.0.0.1:8740",
@@ -114,6 +118,20 @@ class GatewaySettings:
         raw_ui = os.getenv("DLE_UI_DIST_DIR")
         ui_dist_dir = Path(raw_ui) if raw_ui else DEFAULT_UI_DIST_DIR
 
+        raw_data_dir = os.getenv("DLE_DATA_DIR")
+        data_dir = Path(raw_data_dir) if raw_data_dir else None
+
+        raw_keys_dir = os.getenv("DLE_KEYS_DIR")
+        keys_dir = (
+            Path(raw_keys_dir)
+            if raw_keys_dir
+            else ((data_dir / "keys") if data_dir is not None else None)
+        )
+
+        raw_nli_path = os.getenv("DLE_NLI_MODEL_PATH")
+        nli_model_path = Path(raw_nli_path) if raw_nli_path else None
+        nli_sha256 = os.getenv("DLE_NLI_SHA256") or None
+
         raw_cors = os.getenv("DLE_CORS_ORIGINS")
         if raw_cors:
             cors_origins = tuple(origin.strip() for origin in raw_cors.split(",") if origin.strip())
@@ -148,6 +166,10 @@ class GatewaySettings:
             gemini_api_key=os.getenv("GEMINI_API_KEY") or None,
             config_dir=config_dir,
             ui_dist_dir=ui_dist_dir,
+            data_dir=data_dir,
+            keys_dir=keys_dir,
+            nli_model_path=nli_model_path,
+            nli_sha256=nli_sha256,
             keepalive_interval_s=keepalive_interval_s,
             cors_origins=cors_origins,
         )

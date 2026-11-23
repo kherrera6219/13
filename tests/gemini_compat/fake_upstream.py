@@ -375,19 +375,15 @@ class FakeUpstream:
                 isinstance(gen_cfg, Mapping)
                 and gen_cfg.get("responseMimeType") == "application/json"
             ):
-                parts.append(
-                    {
-                        "text": json.dumps(
-                            {
-                                "answer": "verified",
-                                "confidence": 0.96,
-                                "model": clean_model,
-                            }
-                        )
-                    }
-                )
+                if job == "claim_extraction":
+                    payload_json = {"job": "claim_extraction", "echo": clean_model}
+                else:
+                    payload_json = {"answer": "verified", "confidence": 0.96, "model": clean_model}
+                parts.append({"text": json.dumps(payload_json)})
             elif inline_mimes := _inline_mime_types(body):
                 parts.append({"text": f"Processed inline image input ({', '.join(inline_mimes)})."})
+            elif job == "writer":
+                parts.append({"text": texts[-1] if texts else "ok"})
             else:
                 turn_count = (
                     len(body.get("contents", [])) if isinstance(body.get("contents"), list) else 1
