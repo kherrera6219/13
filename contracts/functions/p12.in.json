@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/p12.in.json",
+  "title": "DVSS_P12_Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["previous_c_t", "u_t", "mu_0", "drift_delta", "drift_lambda"],
+  "properties": {
+    "previous_c_t": { "type": "number", "minimum": 0 },
+    "u_t": { "type": "number", "minimum": 0, "maximum": 1 },
+    "mu_0": { "type": "number", "minimum": 0, "maximum": 1 },
+    "drift_delta": { "type": "number", "minimum": 0, "maximum": 1 },
+    "drift_lambda": { "type": "number", "exclusiveMinimum": 0 }
+  }
+}

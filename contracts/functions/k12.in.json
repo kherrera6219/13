@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/k12.in.json",
+  "title": "DVSS_K12_Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["objections"],
+  "properties": {
+    "objections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["objection_id", "role_axis", "blocking", "state", "closed_by", "closure_evidence"],
+        "properties": {
+          "objection_id": { "type": "string", "minLength": 1 },
+          "role_axis": { "type": "integer", "minimum": 8, "maximum": 11 },
+          "blocking": { "type": "boolean" },
+          "state": { "type": "string", "enum": ["open", "closed"] },
+          "closed_by": { "type": ["string", "null"] },
+          "closure_evidence": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+        }
+      }
+    }
+  }
+}

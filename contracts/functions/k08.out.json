@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/k08.out.json",
+  "title": "DVSS_K08_Output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["belief"],
+  "properties": {
+    "belief": { "type": "number", "minimum": 0, "maximum": 1 }
+  }
+}

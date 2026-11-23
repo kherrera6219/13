@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/k08.in.json",
+  "title": "DVSS_K08_Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["provenance_prior", "active_in_scope", "age_years", "decay_lambda"],
+  "properties": {
+    "provenance_prior": { "type": "number", "minimum": 0, "maximum": 1 },
+    "active_in_scope": { "type": "boolean" },
+    "age_years": { "type": "number", "minimum": 0 },
+    "decay_lambda": { "type": "number", "minimum": 0 }
+  }
+}

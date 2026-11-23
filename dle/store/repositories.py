@@ -508,6 +508,27 @@ class ReceiptRepository:
             ).fetchone()
             return dict(row) if row is not None else None
 
+    def list_signing_keys(self) -> list[dict[str, object]]:
+        """List all registered public signing key descriptors."""
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT * FROM signing_keys ORDER BY valid_from_utc ASC"
+            ).fetchall()
+            return [dict(r) for r in rows]
+
+    def list_chain_receipts(self, chain_id: str) -> list[dict[str, object]]:
+        """Return ordered ``(receipt_id, chain_seq, receipt_sha256)`` records for ``chain_id``."""
+        with self._lock:
+            rows = self._conn.execute(
+                """
+                SELECT receipt_id, chain_seq, receipt_sha256
+                FROM receipts WHERE chain_id = ?
+                ORDER BY chain_seq ASC
+                """,
+                (chain_id,),
+            ).fetchall()
+            return [dict(r) for r in rows]
+
     def last_chain_tip(self, chain_id: str) -> tuple[int, str]:
         """Return ``(chain_seq, previous_hash)`` tip for ``chain_id``."""
         with self._lock:

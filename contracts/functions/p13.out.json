@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/p13.out.json",
+  "title": "DVSS_P13_Output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["objection_predicates"],
+  "properties": {
+    "objection_predicates": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/p12.out.json",
+  "title": "DVSS_P12_Output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["c_t", "is_latched", "latch_reason"],
+  "properties": {
+    "c_t": { "type": "number", "minimum": 0 },
+    "is_latched": { "type": "boolean" },
+    "latch_reason": { "type": ["string", "null"] }
+  }
+}

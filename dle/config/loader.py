@@ -44,11 +44,15 @@ def _coerce_jcs_value(value: object) -> _JsonValue:
     raise ConfigError(f"value of type {type(value).__name__} is not JCS JSON serializable")
 
 
+def canonicalize_jcs(payload: Mapping[str, object]) -> bytes:
+    """Return RFC 8785 JCS canonical UTF-8 bytes for ``payload``."""
+    normalized: dict[str, _JsonValue] = {str(k): _coerce_jcs_value(v) for k, v in payload.items()}
+    return rfc8785.dumps(normalized)
+
+
 def compute_policy_digest(payload: Mapping[str, object]) -> str:
     """Return lowercase hex SHA-256 of the RFC 8785 JCS canonicalization of ``payload``."""
-    normalized: dict[str, _JsonValue] = {str(k): _coerce_jcs_value(v) for k, v in payload.items()}
-    canonical_bytes = rfc8785.dumps(normalized)
-    return hashlib.sha256(canonical_bytes).hexdigest()
+    return hashlib.sha256(canonicalize_jcs(payload)).hexdigest()
 
 
 def _read_yaml_mapping(path: Path) -> dict[str, object]:

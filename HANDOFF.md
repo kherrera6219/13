@@ -2,6 +2,21 @@
 
 Running record for agents. Newest entry first. Keep each entry short: what changed, what was learned, what is next.
 
+## 2026-11-22 — Phase 2 Wave 2B: Extractor, Verifier, Scorer, Release Controller & Receipts (H10, H12..H15)
+
+**State.** Phase 2 Wave 2B complete. Claim extractor (`H10`), NLI verifier (`H12` / `DVSS-P04`), source-age & terminal `u` scorer (`H13` / `DVSS-K08`), release controller (`H14` / `DVSS-K04`, `K11`, `K12`, `P12`, `P13`), and Ed25519/JCS/WORM Merkle receipt sealer + offline CLI verifier (`H15` / `dle.tools.verify_receipt`) are implemented and verified alongside paired function contracts (`k04`, `k08`, `k11`, `k12`, `p04`, `p12`, `p13`) and Hypothesis property tests.
+
+**Changed.**
+- `dle/host/services/evidence.py`: Aligned `AUTHORITY_PRIOR` to white paper §16a (`primary_text=1.00`, `binding_instrument=0.95`).
+- `dle/store/repositories.py`: Added `list_signing_keys()` and `list_chain_receipts()` to `ReceiptRepository`.
+- `dle/host/services/claim_extractor.py`: Implemented `H10` (`ClaimExtractor`, `build_extractor_request` with `DLE-PRM-001` prompt/user-slot safety, deterministic offline fallback + K01 span validation). Tested against 30 frozen golden pairs (`tests/contract/prompts/test_claim_extractor.py`).
+- `dle/host/services/scorer.py` & `verifier.py`: Implemented `DVSS-K08` (`source_age_decay`), `F-SCORE-01` (`compute_terminal_u`), `DVSS-P04` (`detect_contradictions`), `ClaimVerifier`, and OpenAPI `groundingMetadata` emission (`tests/unit/host/services/test_verifier_and_scorer.py`).
+- `dle/host/services/release.py`: Implemented `DVSS-K12` (`evaluate_compliance_veto`), `DVSS-P13` (`safety_policy_check`), `DVSS-P12` (`update_cusum_drift`), `DVSS-K04` (`evaluate_release_gate`), and `DVSS-K11` (`apply_disclosure`), verified with Hypothesis property tests.
+- `dle/host/services/receipts.py` & `dle/tools/verify_receipt.py`: Implemented `Ed25519KeyManager`, domain-separated SHA-256 Merkle proofs/checkpoints, schema-3.8.0 `ReceiptSealer`, ZIP bundle export, and standalone CLI verifier (`tests/unit/host/services/test_release_and_receipts.py`).
+- Added 14 Draft 2020-12 contract schemas (`contracts/functions/{k04,k08,k11,k12,p04,p12,p13}.{in,out}.json`), updated `docs/traceability/rtm.csv` and `CHANGELOG.md`.
+
+**Next.** Execute **Phase 2 Wave 2C** (wire `StoreBundle`, `EvidenceService`, `ClaimExtractor`, `ClaimVerifier`, `ReceiptSealer`, real `H14` verify-and-gate workflow, `/v1/sources`, `/admin/sources`, `/v1/receipts/{id}`, `/admin/keys/rotate`, `/admin/receipts/export` into `dle/edge/gateway.py` + `H16`, add governed compat tests `GC-12`/`GC-13`/`GC-25`, build Browser Inspector UI `CitationList`/`ClaimsTable`/`ReceiptViewer`/`SourcesPanel` + Storybook, and run full Docker + Phase 2 exit verification).
+
 ## 2026-11-22 — Phase 2 Wave 2A: SQLite Stores, M4 Embeddings, M3 NLI & H5 Evidence (DVSS-K05)
 
 **State.** Phase 2 Wave 2A complete. Persistent 5-DB SQLite stores (`registry`, `evidence`, `sessions`, `receipts`, `ops`) with append-only triggers + `sqlite-vec`, `M4` `gemini-embedding-001` adapter, `M3` NLI scorer interface (`DeterministicLexicalNliScorer` + SHA-256 verified `OnnxNliScorer`), and `H5` `EvidenceService` (`DVSS-K05` / `DVSS-K06` + `contracts/functions/k05`) are implemented and verified.

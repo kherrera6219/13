@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/k11.in.json",
+  "title": "DVSS_K11_Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision", "profile", "receipt_id"],
+  "properties": {
+    "decision": { "type": "string", "enum": ["block", "withhold_drift", "abstain_or_explain", "release"] },
+    "profile": { "type": "string", "enum": ["strict", "advisory", "kernel_only", "kernel_plus_policy"] },
+    "receipt_id": { "type": "string", "pattern": "^[0-9a-f-]{36}$" },
+    "block_reason": { "type": ["string", "null"] }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/p04.out.json",
+  "title": "DVSS_P04_Output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contradictions"],
+  "properties": {
+    "contradictions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["claim_a_id", "claim_b_id", "reason", "score"],
+        "properties": {
+          "claim_a_id": { "type": "string", "minLength": 1 },
+          "claim_b_id": { "type": "string", "minLength": 1 },
+          "reason": { "type": "string", "minLength": 1 },
+          "score": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    }
+  }
+}

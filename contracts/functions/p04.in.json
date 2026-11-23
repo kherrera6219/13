@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/p04.in.json",
+  "title": "DVSS_P04_Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["claim_count", "threshold"],
+  "properties": {
+    "claim_count": { "type": "integer", "minimum": 0 },
+    "threshold": { "type": "number", "minimum": 0, "maximum": 1 }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/k12.out.json",
+  "title": "DVSS_K12_Output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["open_blocking_ids", "total_objections"],
+  "properties": {
+    "open_blocking_ids": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "total_objections": { "type": "integer", "minimum": 0 }
+  }
+}

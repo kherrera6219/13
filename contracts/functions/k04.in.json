@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/k04.in.json",
+  "title": "DVSS_K04_Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_scope_valid", "claim_count", "all_binding_verified", "open_blocking_count", "u", "drift_latched", "cusum", "has_calibration"],
+  "properties": {
+    "schema_scope_valid": { "type": "boolean" },
+    "claim_count": { "type": "integer", "minimum": 0 },
+    "all_binding_verified": { "type": "boolean" },
+    "open_blocking_count": { "type": "integer", "minimum": 0 },
+    "u": { "type": "number", "minimum": 0, "maximum": 1 },
+    "cutoff": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+    "drift_latched": { "type": "boolean" },
+    "cusum": { "type": "number", "minimum": 0 },
+    "has_calibration": { "type": "boolean" }
+  }
+}

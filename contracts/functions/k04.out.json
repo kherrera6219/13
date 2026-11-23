@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/k04.out.json",
+  "title": "DVSS_K04_Output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["hard_gate", "u", "cutoff", "decision"],
+  "properties": {
+    "hard_gate": { "type": "boolean" },
+    "u": { "type": "number", "minimum": 0, "maximum": 1 },
+    "cutoff": { "type": "number", "minimum": 0, "maximum": 1 },
+    "decision": { "type": "string", "enum": ["block", "withhold_drift", "abstain_or_explain", "release"] },
+    "block_reason": { "type": ["string", "null"] }
+  }
+}

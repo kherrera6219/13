@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/p13.in.json",
+  "title": "DVSS_P13_Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["input_content", "output_content"],
+  "properties": {
+    "input_content": { "type": "string" },
+    "output_content": { "type": "string" }
+  }
+}

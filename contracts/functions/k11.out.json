@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/k11.out.json",
+  "title": "DVSS_K11_Output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["receipt_release_mode", "api_release_mode", "notice_id", "response_sha256"],
+  "properties": {
+    "receipt_release_mode": {
+      "type": "string",
+      "enum": ["gate_passed", "annotated_release_drift_warning", "annotated_release_ka39", "hard_veto_block", "review_required", "abstained"]
+    },
+    "api_release_mode": { "type": "string", "enum": ["released", "released_advisory", "held"] },
+    "notice_id": { "type": "string", "minLength": 1 },
+    "response_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  }
+}

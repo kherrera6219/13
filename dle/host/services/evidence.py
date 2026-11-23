@@ -23,8 +23,8 @@ from dle.store.repositories import EvidenceRepository
 from dle.temporal import Interval, overlaps
 
 AUTHORITY_PRIOR: dict[str, float] = {
-    "binding_instrument": 1.00,
-    "primary_text": 0.95,
+    "primary_text": 1.00,
+    "binding_instrument": 0.95,
     "peer_reviewed": 0.90,
     "industry_practice": 0.80,
     "app_tool": 0.75,
