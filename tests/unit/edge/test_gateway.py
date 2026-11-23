@@ -12,7 +12,7 @@ import pytest
 
 from dle.config import load_config
 from dle.edge import GatewaySettings, create_app
-from dle.errors import UnsafeBindError, UpstreamApiError
+from dle.errors import ModelUnavailable, UnsafeBindError, UpstreamApiError
 from dle.models import FakeModel
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -203,3 +203,98 @@ async def test_admin_routes_receipts_and_static_ui_serving(tmp_path):
             headers=client_headers,
         )
         assert miss_rcpt.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_governed_stub_fail_closed_sse_keepalives_and_tool_parking():
+    """T-UNIT-EDGE-10: governed stub, fail-closed hold, keepalive SSE, and tool park/resume."""
+    fake = FakeModel(delay_s=0.06)
+    app = create_app(
+        settings=_make_settings(keepalive_interval_s=0.02),
+        model_port=fake,
+    )
+    transport = httpx.ASGITransport(app=app)
+    headers = {"x-goog-api-key": "test-client-key"}
+
+    async with httpx.AsyncClient(transport=transport, base_url="http://127.0.0.1:8740") as client:
+        gov = await client.post(
+            "/v1beta/models/dle-13axis-strict:generateContent",
+            headers=headers,
+            json={"contents": [{"role": "user", "parts": [{"text": "governed prompt"}]}]},
+        )
+        assert gov.status_code == 200
+        assert gov.headers["X-DLE-Release-Mode"] == "released_advisory"
+        assert gov.headers["X-DLE-Tier"] == "1"
+        assert len(gov.headers["X-DLE-Receipt"]) == 36
+
+        gov_sse = await client.post(
+            "/v1beta/models/dle-13axis-strict:streamGenerateContent?alt=sse",
+            headers=headers,
+            json={"contents": [{"role": "user", "parts": [{"text": "streamed governed prompt"}]}]},
+        )
+        assert gov_sse.status_code == 200
+        assert ": keepalive" in gov_sse.text
+        gov_chunks = [
+            json.loads(line[6:]) for line in gov_sse.text.splitlines() if line.startswith("data: ")
+        ]
+        assert gov_chunks[-1]["dleMetadata"]["releaseMode"] == "released_advisory"
+
+        fake.enqueue_error(ModelUnavailable("writer down"))
+        held = await client.post(
+            "/v1beta/models/dle-13axis-strict:generateContent",
+            headers=headers,
+            json={"contents": [{"role": "user", "parts": [{"text": "will hold"}]}]},
+        )
+        assert held.status_code == 200
+        assert held.headers["X-DLE-Release-Mode"] == "held"
+        assert held.json()["candidates"][0]["finishReason"] == "STOP"
+        assert "did not respond" in held.json()["candidates"][0]["content"]["parts"][0]["text"]
+
+        # Pass-through tool call parking and resume
+        fake.enqueue_response(
+            {
+                "candidates": [
+                    {
+                        "index": 0,
+                        "content": {
+                            "role": "model",
+                            "parts": [
+                                {"functionCall": {"id": "fc1", "name": "fn_a", "args": {"x": 1}}},
+                                {"functionCall": {"id": "fc2", "name": "fn_b", "args": {"y": 2}}},
+                            ],
+                        },
+                        "finishReason": "STOP",
+                    }
+                ]
+            }
+        )
+        turn1 = {"role": "user", "parts": [{"text": "call both tools"}]}
+        res1 = await client.post(
+            "/v1beta/models/gemini-4-carbon:generateContent",
+            headers=headers,
+            json={"contents": [turn1]},
+        )
+        assert res1.status_code == 200
+        assert app.state.dle.tool_bridge.count() == 1
+        model_turn = res1.json()["candidates"][0]["content"]
+        assert [p["functionCall"]["id"] for p in model_turn["parts"]] == ["fc1", "fc2"]
+
+        res2 = await client.post(
+            "/v1beta/models/gemini-4-carbon:generateContent",
+            headers=headers,
+            json={
+                "contents": [
+                    turn1,
+                    model_turn,
+                    {
+                        "role": "function",
+                        "parts": [
+                            {"functionResponse": {"name": "fn_a", "response": {"ok": True}}},
+                            {"functionResponse": {"name": "fn_b", "response": {"ok": True}}},
+                        ],
+                    },
+                ]
+            },
+        )
+        assert res2.status_code == 200
+        assert app.state.dle.tool_bridge.count() == 0

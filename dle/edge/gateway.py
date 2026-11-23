@@ -28,8 +28,11 @@ from fastapi.staticfiles import StaticFiles
 
 from dle import __version__
 from dle.config import DleConfig, load_config
-from dle.edge.sessions import InMemorySessionStore
+from dle.edge.composer import DLE_API_VERSION, ResponseComposer
+from dle.edge.sessions import InMemorySessionStore, session_id_after_response
 from dle.edge.settings import GatewaySettings, validate_bind
+from dle.edge.streaming import split_response_chunks, stream_governed_sse
+from dle.edge.tools import ToolBridge, extract_function_calls, extract_model_content
 from dle.edge.translator import normalize_model_id, translate_generate_request
 from dle.errors import (
     AuthError,
@@ -40,10 +43,11 @@ from dle.errors import (
     SessionError,
     UpstreamApiError,
 )
+from dle.host.functions import FunctionRegistry, register_phase1_functions
+from dle.host.workflow import run_governed_stub
 from dle.models import EgressClient, FakeModel, GeminiAdapter, ModelPort, ModelRegistry
 from dle.observability import METRICS, get_logger, sha256_text
 
-DLE_API_VERSION = "1.0"
 _RECEIPT_ID_RE = re.compile(r"^[0-9a-f-]{36}$")
 _ADMIN_LOOPBACK_HOSTS: frozenset[str] = frozenset({"127.0.0.1", "::1", "localhost", "testclient"})
 
@@ -81,6 +85,9 @@ class GatewayRuntime:
     registry: ModelRegistry
     model_port: ModelPort
     sessions: InMemorySessionStore
+    function_registry: FunctionRegistry
+    tool_bridge: ToolBridge
+    composer: ResponseComposer
     egress: EgressClient | None = None
     receipts: dict[str, dict[str, object]] = field(default_factory=dict)
     sources: dict[str, dict[str, object]] = field(default_factory=dict)
@@ -185,6 +192,11 @@ def create_app(
     eff_config = config if config is not None else load_config(eff_settings.config_dir)
     eff_registry = registry if registry is not None else ModelRegistry(eff_config.model_pins)
     sessions = InMemorySessionStore()
+    fn_registry = FunctionRegistry(eff_config.functions, eff_config.profiles)
+    register_phase1_functions(fn_registry, eff_config.notices)
+    fn_registry.self_check()
+    tool_bridge = ToolBridge()
+    composer = ResponseComposer(eff_config.notices)
 
     egress: EgressClient | None = None
     eff_model_port: ModelPort
@@ -206,6 +218,9 @@ def create_app(
         registry=eff_registry,
         model_port=eff_model_port,
         sessions=sessions,
+        function_registry=fn_registry,
+        tool_bridge=tool_bridge,
+        composer=composer,
         egress=egress,
     )
     log = get_logger("dle.edge.gateway")
@@ -365,16 +380,33 @@ def create_app(
 
         upstream_key = _upstream_key(runtime.settings, client_key)
         if not run_req.is_governed:
+            if run_req.has_function_responses:
+                runtime.tool_bridge.resume(run_req.session_id)
             res = await runtime.model_port.generate(
                 run_req.model,
                 run_req.raw_body,
                 api_key=upstream_key,
                 job="passthrough",
             )
-            headers = {
-                "X-DLE-Release-Mode": "passthrough",
-                "X-DLE-API-Version": DLE_API_VERSION,
-            }
+            calls = extract_function_calls(res.body)
+            if calls:
+                model_content = extract_model_content(res.body)
+                if model_content is not None:
+                    next_sid = session_id_after_response(
+                        tenant=tenant,
+                        model=run_req.model,
+                        system_instruction=run_req.system_instruction,
+                        contents=run_req.contents,
+                        response_content=model_content,
+                        explicit_session=explicit_session,
+                    )
+                    runtime.tool_bridge.park(
+                        run_id=run_req.run_id,
+                        session_id=next_sid,
+                        pending_calls=calls,
+                        run_state={"model": run_req.model, "tenant": tenant},
+                    )
+            out_body, headers = runtime.composer.compose_passthrough(res.body)
             _record_http_metric("/v1beta/models/{model}:generateContent", 200)
             log.info(
                 "gateway.generate",
@@ -385,34 +417,30 @@ def create_app(
                 run_id=run_req.run_id,
                 duration_ms=round((time.perf_counter() - start) * 1000.0, 3),
             )
-            return JSONResponse(status_code=200, content=res.body, headers=headers)
+            return JSONResponse(status_code=200, content=out_body, headers=headers)
 
-        # Phase 1 Wave 1B minimal governed placeholder (upgraded to H16 stub in Wave 1C P1-15).
-        writer_model = runtime.registry.pin_for_job("writer")
-        res = await runtime.model_port.generate(
-            writer_model,
-            run_req.raw_body,
+        stub_res = await run_governed_stub(
+            run_req=run_req,
+            function_registry=runtime.function_registry,
+            model_registry=runtime.registry,
+            model_port=runtime.model_port,
             api_key=upstream_key,
-            job="writer",
         )
-        out_body = copy.deepcopy(res.body)
-        out_body["dleMetadata"] = {
-            "releaseMode": "released_advisory",
-            "receiptId": run_req.run_id,
-            "tier": 1,
-        }
-        headers = {
-            "X-DLE-Release-Mode": "released_advisory",
-            "X-DLE-Receipt": run_req.run_id,
-            "X-DLE-Tier": "1",
-            "X-DLE-API-Version": DLE_API_VERSION,
-        }
+        out_body, headers = runtime.composer.compose_governed(
+            release_mode=stub_res.release_mode,
+            receipt_id=stub_res.receipt_id,
+            tier=stub_res.tier,
+            body=stub_res.body,
+            notice_id=stub_res.notice_id,
+            notice_context=stub_res.notice_context,
+            hold_reason=stub_res.hold_reason,
+        )
         _record_http_metric("/v1beta/models/{model}:generateContent", 200)
         log.info(
             "gateway.generate",
             route="/v1beta/models/{model}:generateContent",
             model=run_req.model,
-            release_mode="released_advisory",
+            release_mode=stub_res.release_mode,
             session_id=run_req.session_id,
             run_id=run_req.run_id,
             duration_ms=round((time.perf_counter() - start) * 1000.0, 3),
@@ -439,24 +467,60 @@ def create_app(
         runtime.sessions.touch(run_req.session_id, tenant=tenant, model=run_req.model)
         upstream_key = _upstream_key(runtime.settings, client_key)
 
-        target_model = (
-            runtime.registry.pin_for_job("writer") if run_req.is_governed else run_req.model
-        )
-        job = "writer" if run_req.is_governed else "passthrough"
-        release_mode = "released_advisory" if run_req.is_governed else "passthrough"
+        if run_req.is_governed:
+
+            async def _execute_governed_gate() -> tuple[dict[str, object], dict[str, str]]:
+                stub_res = await run_governed_stub(
+                    run_req=run_req,
+                    function_registry=runtime.function_registry,
+                    model_registry=runtime.registry,
+                    model_port=runtime.model_port,
+                    api_key=upstream_key,
+                )
+                return runtime.composer.compose_governed(
+                    release_mode=stub_res.release_mode,
+                    receipt_id=stub_res.receipt_id,
+                    tier=stub_res.tier,
+                    body=stub_res.body,
+                    notice_id=stub_res.notice_id,
+                    notice_context=stub_res.notice_context,
+                    hold_reason=stub_res.hold_reason,
+                )
+
+            if alt == "sse":
+                _record_http_metric("/v1beta/models/{model}:streamGenerateContent", 200)
+                return StreamingResponse(
+                    stream_governed_sse(
+                        _execute_governed_gate(),
+                        keepalive_interval_s=runtime.settings.keepalive_interval_s,
+                    ),
+                    media_type="text/event-stream",
+                    headers={
+                        "X-DLE-Tier": "1",
+                        "X-DLE-API-Version": DLE_API_VERSION,
+                        "Cache-Control": "no-cache",
+                    },
+                )
+
+            out_body, out_headers = await _execute_governed_gate()
+            _record_http_metric("/v1beta/models/{model}:streamGenerateContent", 200)
+            return JSONResponse(
+                status_code=200,
+                content=split_response_chunks(out_body),
+                headers=out_headers,
+            )
+
+        if run_req.has_function_responses:
+            runtime.tool_bridge.resume(run_req.session_id)
         headers: dict[str, str] = {
-            "X-DLE-Release-Mode": release_mode,
+            "X-DLE-Release-Mode": "passthrough",
             "X-DLE-API-Version": DLE_API_VERSION,
         }
-        if run_req.is_governed:
-            headers["X-DLE-Receipt"] = run_req.run_id
-            headers["X-DLE-Tier"] = "1"
-
         stream_iter = runtime.model_port.stream_generate(
-            target_model,
+            run_req.model,
             run_req.raw_body,
             api_key=upstream_key,
-            job=job,
+            job="passthrough",
         )
 
         if alt == "sse":

@@ -70,7 +70,7 @@ markers = [
   "live: calls the real Gemini API; nightly only",
   "slow: longer than 10 s",
 ]
-addopts = "-m 'not live' --strict-markers"
+addopts = "--import-mode=importlib -m 'not live' --strict-markers"
 asyncio_default_fixture_loop_scope = "function"
 
 [tool.coverage.report]

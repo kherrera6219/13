@@ -1,7 +1,7 @@
 """Edge layer: Gemini-compatible HTTP façade, auth, session resolution, and translator."""
 
+from dle.edge.composer import DLE_API_VERSION, ResponseComposer
 from dle.edge.gateway import (
-    DLE_API_VERSION,
     VIRTUAL_MODELS,
     GatewayRuntime,
     app,
@@ -20,6 +20,17 @@ from dle.edge.settings import (
     GatewaySettings,
     validate_bind,
 )
+from dle.edge.streaming import (
+    DEFAULT_KEEPALIVE_INTERVAL_S,
+    split_response_chunks,
+    stream_governed_sse,
+)
+from dle.edge.tools import (
+    ParkedRun,
+    ToolBridge,
+    extract_function_calls,
+    extract_model_content,
+)
 from dle.edge.translator import (
     GOVERNED_MODELS,
     RunRequest,
@@ -28,6 +39,7 @@ from dle.edge.translator import (
 )
 
 __all__ = [
+    "DEFAULT_KEEPALIVE_INTERVAL_S",
     "DLE_API_VERSION",
     "GOVERNED_MODELS",
     "LOOPBACK_HOSTS",
@@ -36,14 +48,21 @@ __all__ = [
     "GatewayRuntime",
     "GatewaySettings",
     "InMemorySessionStore",
+    "ParkedRun",
+    "ResponseComposer",
     "RunRequest",
     "SessionRecord",
+    "ToolBridge",
     "app",
     "create_app",
+    "extract_function_calls",
+    "extract_model_content",
     "gemini_error_response",
     "normalize_model_id",
     "resolve_session_id",
     "session_id_after_response",
+    "split_response_chunks",
+    "stream_governed_sse",
     "translate_generate_request",
     "validate_bind",
 ]

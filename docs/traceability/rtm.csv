@@ -34,4 +34,10 @@ NFR-PRIV-01;NFR-OBS-01,"dle/observability/",T-UNIT-OBS-01..05,1,implemented
 FR-API-03;NFR-REL-02,"dle/models/port.py,dle/models/gemini.py,dle/models/fake.py",T-UNIT-MODEL-01..03,1,implemented
 NFR-COST-01;FR-REL-04,"dle/models/registry.py",T-UNIT-MODEL-04..06,1,implemented
 FR-SES-01..03,"dle/edge/sessions.py",T-UNIT-SES-01..05,1,implemented
-FR-API-01..02;NFR-SEC-01..02;DVSS-K01,"dle/edge/translator.py,dle/edge/settings.py,dle/edge/gateway.py",T-UNIT-EDGE-01..09,1,implemented
+FR-API-01..02;NFR-SEC-01..02;DVSS-K01,"dle/edge/translator.py,dle/edge/settings.py,dle/edge/gateway.py",T-UNIT-EDGE-01..10,1,implemented
+FR-TOOL-01..03,"dle/edge/tools.py",T-UNIT-TOOLB-01..02,1,implemented
+FR-API-05..06,"dle/edge/composer.py",T-CONTRACT-RESP-01..02,1,implemented
+FR-API-07;NFR-PERF-02,"dle/edge/streaming.py",T-COMPAT-STREAM-01..02,1,implemented
+FR-FN-01..02;FR-FN-04,"dle/host/functions/",T-ENG-FN-01..03,1,implemented
+FR-WF-01,"dle/host/workflow/stub.py",T-UNIT-EDGE-10,1,implemented
+FR-RCPT-03;DLE-PLN-001,"dle/host/services/pilot.py",tests/engines/legacy_pilot/test_acceptance.py,1,implemented

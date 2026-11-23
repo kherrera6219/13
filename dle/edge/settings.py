@@ -68,6 +68,7 @@ class GatewaySettings:
     gemini_api_key: str | None = None
     config_dir: Path = DEFAULT_CONFIG_DIR
     ui_dist_dir: Path | None = DEFAULT_UI_DIST_DIR
+    keepalive_interval_s: float = 8.0
     cors_origins: tuple[str, ...] = (
         "http://127.0.0.1:8740",
         "http://localhost:8740",
@@ -119,6 +120,16 @@ class GatewaySettings:
         else:
             cors_origins = cls.cors_origins
 
+        raw_keepalive = os.getenv("DLE_KEEPALIVE_INTERVAL_S", "8.0").strip()
+        try:
+            keepalive_interval_s = float(raw_keepalive)
+        except ValueError as exc:
+            raise ConfigError(f"invalid DLE_KEEPALIVE_INTERVAL_S {raw_keepalive!r}") from exc
+        if keepalive_interval_s <= 0.0 or keepalive_interval_s > 10.0:
+            raise ConfigError(
+                f"DLE_KEEPALIVE_INTERVAL_S must be in (0, 10], got {keepalive_interval_s}"
+            )
+
         settings = cls(
             bind_address=bind_address,
             port=port,
@@ -137,6 +148,7 @@ class GatewaySettings:
             gemini_api_key=os.getenv("GEMINI_API_KEY") or None,
             config_dir=config_dir,
             ui_dist_dir=ui_dist_dir,
+            keepalive_interval_s=keepalive_interval_s,
             cors_origins=cors_origins,
         )
         settings.register_secrets()
