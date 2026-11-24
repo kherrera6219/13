@@ -60,6 +60,26 @@ export function RunSummaryCard({
         <dd className="dle-mono">{runSummary.attemptsCount}</dd>
         <dt>Assurance Ordering</dt>
         <dd>{runSummary.blindedAssuranceRoles ? "Blinded" : "Standard"}</dd>
+        {runSummary.sEff !== undefined && (
+          <>
+            <dt>Intake S_eff</dt>
+            <dd className="dle-mono">{runSummary.sEff}</dd>
+          </>
+        )}
+        {runSummary.modelCallsUsed !== undefined && runSummary.modelCallBudget !== undefined && (
+          <>
+            <dt>Model Calls</dt>
+            <dd className="dle-mono">
+              {runSummary.modelCallsUsed} / {runSummary.modelCallBudget}
+            </dd>
+          </>
+        )}
+        {runSummary.costUsd !== undefined && (
+          <>
+            <dt>Metered Cost</dt>
+            <dd className="dle-mono">${runSummary.costUsd.toFixed(6)}</dd>
+          </>
+        )}
         {terminalU !== undefined && terminalU !== null && (
           <>
             <dt>Terminal u</dt>

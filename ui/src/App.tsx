@@ -3,6 +3,11 @@ import "./App.css";
 import { AddressGraphDrawer } from "./components/AddressGraphDrawer";
 import { ChatComposer, type ComposerSubmitPayload } from "./components/ChatComposer";
 import { ClaimsTable } from "./components/ClaimsTable";
+import { CostByTierChart } from "./components/CostByTierChart";
+import { DriftBanner } from "./components/DriftBanner";
+import { ExportDialog } from "./components/ExportDialog";
+import { FunctionFlagsEditor } from "./components/FunctionFlagsEditor";
+import { HealthPanel } from "./components/HealthPanel";
 import { MessageBubble } from "./components/MessageBubble";
 import { PersonaChips } from "./components/PersonaChips";
 import { PersonaDrawer } from "./components/PersonaDrawer";
@@ -11,21 +16,33 @@ import { RunSummaryCard } from "./components/RunSummaryCard";
 import { SourceRegistryTable } from "./components/SourceRegistryTable";
 import { StepTimeline } from "./components/StepTimeline";
 import {
+  exportReceiptsBundle,
+  fetchCostByTier,
+  fetchFunctionFlags,
   fetchHealth,
   fetchSources,
   formatFriendlyError,
   registerSource,
+  resetDriftLatch,
   sendChatMessage,
+  updateFunctionFlags,
   type RegisterSourceInput,
 } from "./lib/dleClient";
-import type { ChatRun, DleHeaders, EvidenceSource, HealthStatus } from "./types/dle";
+import type {
+  ChatRun,
+  ConsequentialFunctionItem,
+  CostByTierDay,
+  DleHeaders,
+  EvidenceSource,
+  HealthStatus,
+} from "./types/dle";
 
 const SESSION_KEY_STORAGE = "dle_client_key";
 const SESSION_ADMIN_STORAGE = "dle_admin_key";
 
 export function App() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
-  const [activeTab, setActiveTab] = useState<"chat" | "sources">("chat");
+  const [activeTab, setActiveTab] = useState<"chat" | "sources" | "ops">("chat");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [apiKey, setApiKey] = useState(() => {
     if (typeof window !== "undefined") {
@@ -53,37 +70,72 @@ export function App() {
   const [sourcesError, setSourcesError] = useState<string | null>(null);
   const [sourcesStatus, setSourcesStatus] = useState<string | null>(null);
 
+  const [flags, setFlags] = useState<ConsequentialFunctionItem[]>([]);
+  const [flagsSchemaVersion, setFlagsSchemaVersion] = useState("1.0.0");
+  const [flagsLoading, setFlagsLoading] = useState(false);
+  const [flagsError, setFlagsError] = useState<string | null>(null);
+  const [flagsStatus, setFlagsStatus] = useState<string | null>(null);
+  const [costDays, setCostDays] = useState<CostByTierDay[]>([]);
+  const [costLoading, setCostLoading] = useState(false);
+  const [opsError, setOpsError] = useState<string | null>(null);
+
   const keyInputId = useId();
   const adminKeyInputId = useId();
   const sessionInputId = useId();
   const chatTabId = useId();
   const sourcesTabId = useId();
+  const opsTabId = useId();
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "http://127.0.0.1:8740";
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
 
-  useEffect(() => {
-    let active = true;
-    const loadHealth = async () => {
-      try {
-        const res = await fetchHealth(baseUrl);
-        if (active) {
-          setHealth(res);
-          setHealthError(null);
-        }
-      } catch (err) {
-        if (active) {
-          setHealthError(formatFriendlyError(err));
-        }
-      }
-    };
-    void loadHealth();
-    return () => {
-      active = false;
-    };
+  const loadHealth = useCallback(async () => {
+    try {
+      const res = await fetchHealth(baseUrl);
+      setHealth(res);
+      setHealthError(null);
+    } catch (err) {
+      setHealthError(formatFriendlyError(err));
+    }
   }, [baseUrl]);
+
+  useEffect(() => {
+    void loadHealth();
+  }, [loadHealth]);
+
+  const loadOpsData = useCallback(async () => {
+    const effectiveAdmin = adminKey.trim();
+    if (!effectiveAdmin) {
+      setOpsError("Open Settings and enter your Middleware Admin Key (X-DLE-Admin-Key) first.");
+      return;
+    }
+    setFlagsLoading(true);
+    setCostLoading(true);
+    setOpsError(null);
+    setFlagsError(null);
+    try {
+      const [flagsRes, costRes] = await Promise.all([
+        fetchFunctionFlags(baseUrl, effectiveAdmin),
+        fetchCostByTier(baseUrl, effectiveAdmin, 7),
+      ]);
+      setFlags(flagsRes.consequentialFunctions);
+      setFlagsSchemaVersion(flagsRes.schemaVersion);
+      setCostDays(costRes);
+    } catch (err) {
+      setOpsError(formatFriendlyError(err));
+    } finally {
+      setFlagsLoading(false);
+      setCostLoading(false);
+    }
+  }, [adminKey, baseUrl]);
+
+  useEffect(() => {
+    if (activeTab === "ops" && adminKey.trim().length > 0) {
+      void loadOpsData();
+    }
+  }, [activeTab, adminKey, loadOpsData]);
 
   const loadSources = useCallback(async () => {
     const effectiveKey = apiKey.trim();
@@ -286,6 +338,16 @@ export function App() {
           >
             Sources Admin
           </button>
+          <button
+            id={opsTabId}
+            type="button"
+            role="tab"
+            className={activeTab === "ops" ? "dle-tab dle-tab--active" : "dle-tab"}
+            aria-selected={activeTab === "ops"}
+            onClick={() => setActiveTab("ops")}
+          >
+            Ops &amp; Audit
+          </button>
         </nav>
 
         <div className="dle-toolbar">
@@ -350,7 +412,23 @@ export function App() {
         </section>
       )}
 
-      {activeTab === "chat" ? (
+      {health && (
+        <DriftBanner
+          driftLatch={health.driftLatch}
+          onResetDrift={async (artifactId) => {
+            const effectiveAdmin = adminKey.trim();
+            if (!effectiveAdmin) {
+              throw new Error(
+                "Open Settings and enter your Middleware Admin Key (X-DLE-Admin-Key) first.",
+              );
+            }
+            await resetDriftLatch(baseUrl, effectiveAdmin, artifactId);
+            await loadHealth();
+          }}
+        />
+      )}
+
+      {activeTab === "chat" && (
         <main className="dle-workspace" role="tabpanel" aria-labelledby={chatTabId}>
           <div className="dle-chat-column">
             <section className="dle-transcript" aria-label="Conversation">
@@ -425,7 +503,8 @@ export function App() {
             <ReceiptViewer receipt={inspectedRun?.receipt ?? null} />
           </aside>
         </main>
-      ) : (
+      )}
+      {activeTab === "sources" && (
         <main className="dle-admin-workspace" role="tabpanel" aria-labelledby={sourcesTabId}>
           {sourcesError && (
             <div role="alert" className="dle-banner dle-banner--error">
@@ -443,6 +522,75 @@ export function App() {
             onRefresh={() => void loadSources()}
             onRegister={handleRegisterSource}
           />
+        </main>
+      )}
+      {activeTab === "ops" && (
+        <main className="dle-admin-workspace" role="tabpanel" aria-labelledby={opsTabId}>
+          {opsError && (
+            <div role="alert" className="dle-banner dle-banner--error">
+              {opsError}
+            </div>
+          )}
+          <div className="dle-ops-grid">
+            <HealthPanel
+              health={health}
+              error={healthError}
+              onRefresh={() => void loadHealth()}
+            />
+            <FunctionFlagsEditor
+              flags={flags}
+              loading={flagsLoading}
+              error={flagsError}
+              statusMessage={flagsStatus}
+              onSave={async (nextFlags) => {
+                const effectiveAdmin = adminKey.trim();
+                if (!effectiveAdmin) {
+                  setFlagsError(
+                    "Open Settings and enter your Middleware Admin Key (X-DLE-Admin-Key) first.",
+                  );
+                  return;
+                }
+                setFlagsError(null);
+                setFlagsStatus(null);
+                try {
+                  const saved = await updateFunctionFlags(baseUrl, effectiveAdmin, {
+                    schemaVersion: flagsSchemaVersion,
+                    consequentialFunctions: nextFlags,
+                  });
+                  setFlags(saved.consequentialFunctions);
+                  setFlagsStatus(
+                    `Saved ${saved.consequentialFunctions.length} consequential function flags.`,
+                  );
+                } catch (err) {
+                  setFlagsError(formatFriendlyError(err));
+                }
+              }}
+            />
+            <CostByTierChart
+              days={costDays}
+              loading={costLoading}
+              onRefresh={() => void loadOpsData()}
+            />
+            <ExportDialog
+              onExport={async (fromIso, toIso) => {
+                const effectiveAdmin = adminKey.trim();
+                if (!effectiveAdmin) {
+                  throw new Error(
+                    "Open Settings and enter your Middleware Admin Key (X-DLE-Admin-Key) first.",
+                  );
+                }
+                const blob = await exportReceiptsBundle(baseUrl, effectiveAdmin, fromIso, toIso);
+                if (typeof window !== "undefined") {
+                  const url = window.URL.createObjectURL(blob);
+                  const link = document.createElement("a");
+                  link.href = url;
+                  link.download = "dle_receipts_bundle.zip";
+                  link.click();
+                  window.URL.revokeObjectURL(url);
+                }
+              }}
+            />
+          </div>
         </main>
       )}
     </div>

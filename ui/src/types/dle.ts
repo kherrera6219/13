@@ -127,6 +127,53 @@ export interface RunSummary {
   attemptsCount: number;
   blindedAssuranceRoles: boolean;
   consequentialTools: string[];
+  sEff?: number;
+  modelCallsUsed?: number;
+  modelCallBudget?: number;
+  costUsd?: number;
+}
+
+export interface IntakeSummary {
+  promptVersion: string;
+  d: number;
+  rRules: number;
+  rModel: number;
+  rFinal: number;
+  m: number;
+  b: number;
+  z: number;
+  s: number;
+  sEff: number;
+  tier: number;
+  activeRoles: string[];
+  startingHops: number;
+  maxModelCalls: number;
+  maxModelCallsEscalated: number;
+  pillarCount: number;
+  deonticHits: string[];
+  rRuleReasons: string[];
+  zMaxCosine: number;
+  zMatchedCentroid: string | null;
+  modelBindingFlag: boolean;
+}
+
+export interface ConsequentialFunctionItem {
+  name: string;
+  reason: string;
+}
+
+export interface FunctionFlagsResponse {
+  schemaVersion: string;
+  consequentialFunctions: ConsequentialFunctionItem[];
+}
+
+export interface CostByTierDay {
+  date: string;
+  tier1Usd: number;
+  tier2Usd: number;
+  tier3Usd: number;
+  totalUsd: number;
+  runsByTier: Record<string, number>;
 }
 
 export interface PersonaFindingItem {
@@ -200,6 +247,7 @@ export interface ChatRun {
   coordinate?: CoordinateSummary | null;
   graph?: GraphSummary | null;
   runSummary?: RunSummary | null;
+  intake?: IntakeSummary | null;
   personas?: PersonaSummary[];
   steps?: StepTraceItem[];
   objections?: PersonaObjectionItem[];

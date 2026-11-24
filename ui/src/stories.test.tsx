@@ -9,6 +9,11 @@ import * as AddressGraphDrawerStories from "./components/AddressGraphDrawer.stor
 import * as ChatComposerStories from "./components/ChatComposer.stories";
 import * as CitationListStories from "./components/CitationList.stories";
 import * as ClaimsTableStories from "./components/ClaimsTable.stories";
+import * as CostByTierChartStories from "./components/CostByTierChart.stories";
+import * as DriftBannerStories from "./components/DriftBanner.stories";
+import * as ExportDialogStories from "./components/ExportDialog.stories";
+import * as FunctionFlagsEditorStories from "./components/FunctionFlagsEditor.stories";
+import * as HealthPanelStories from "./components/HealthPanel.stories";
 import * as MessageBubbleStories from "./components/MessageBubble.stories";
 import * as PersonaChipsStories from "./components/PersonaChips.stories";
 import * as PersonaDrawerStories from "./components/PersonaDrawer.stories";
@@ -76,6 +81,50 @@ const storyGroups: Array<{ name: string; stories: Record<string, ComposedStory> 
     name: "PersonaDrawer",
     stories: composeStories(PersonaDrawerStories) as unknown as Record<string, ComposedStory>,
   },
+  {
+    name: "DriftBanner",
+    stories: composeStories(DriftBannerStories) as unknown as Record<string, ComposedStory>,
+  },
+  {
+    name: "FunctionFlagsEditor",
+    stories: composeStories(FunctionFlagsEditorStories) as unknown as Record<
+      string,
+      ComposedStory
+    >,
+  },
+  {
+    name: "CostByTierChart",
+    stories: composeStories(CostByTierChartStories) as unknown as Record<string, ComposedStory>,
+  },
+  {
+    name: "HealthPanel",
+    stories: composeStories(HealthPanelStories) as unknown as Record<string, ComposedStory>,
+  },
+  {
+    name: "ExportDialog",
+    stories: composeStories(ExportDialogStories) as unknown as Record<string, ComposedStory>,
+  },
+];
+
+const storyModules = [
+  AddressGraphDrawerStories,
+  ChatComposerStories,
+  CitationListStories,
+  ClaimsTableStories,
+  CostByTierChartStories,
+  DriftBannerStories,
+  ExportDialogStories,
+  FunctionFlagsEditorStories,
+  HealthPanelStories,
+  MessageBubbleStories,
+  PersonaChipsStories,
+  PersonaDrawerStories,
+  ReceiptChipStories,
+  ReceiptViewerStories,
+  ReleaseBadgeStories,
+  RunSummaryCardStories,
+  SourceRegistryTableStories,
+  StepTimelineStories,
 ];
 
 function srgbChannelToLinear(c: number): number {
@@ -152,4 +201,20 @@ describe("Storybook stories play & axe checks", () => {
       });
     }
   }
+});
+
+describe("DLE-SB Storybook catalog user story coverage", () => {
+  it("covers all UI user stories US-03 through US-17", () => {
+    const covered = new Set<string>();
+    for (const mod of storyModules) {
+      const metaObj = mod.default as { parameters?: { dle?: { stories?: string[] } } };
+      for (const storyId of metaObj?.parameters?.dle?.stories ?? []) {
+        covered.add(storyId);
+      }
+    }
+    for (let num = 3; num <= 17; num += 1) {
+      const id = `US-${String(num).padStart(2, "0")}`;
+      expect(covered.has(id), `Missing Storybook coverage for ${id}`).toBe(true);
+    }
+  });
 });

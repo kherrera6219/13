@@ -2,6 +2,16 @@
 
 Running record for agents. Newest entry first. Keep each entry short: what changed, what was learned, what is next.
 
+## 2026-11-23 — Phase 5 Complete (Wave 5B Exit Gate: Admin/Audit UI, Full Storybook/axe Catalog, NFR-PERF-01 & Gate Report)
+
+**State.** Phase 5 (`H2`, `DVSS-K10`, `FR-TIER-01..04`, `NFR-COST-01`, `NFR-PERF-01`, `NFR-ACC-01`, `US-03..17`) is complete and cleared via `reports/phase5_gate.md` (`dle-middleware:phase5`).
+
+**Changed.**
+- `ui/src/`: Added Phase 5 types & admin helpers (`resetDriftLatch`, `fetchFunctionFlags`, `updateFunctionFlags`, `fetchCostByTier`, `exportReceiptsBundle`) in `dleClient.ts`; built `DriftBanner`, `FunctionFlagsEditor`, `CostByTierChart`, `HealthPanel`, and `ExportDialog` with token-only CSS + `ui/src/fixtures/phase5.ts`, CSF3 Storybook stories, `US-03..17` catalog coverage gate (`68/68` `test-storybook` + `axe-core` passed), extended `RunSummaryCard`, and wired `Ops & Audit` tab + top `DriftBanner` in `App.tsx`.
+- Verified `NFR-PERF-01` overhead benchmark (pass-through `p95=0.586 ms`; governed Tier-1 `p95=39.639 ms` vs 400 ms ceiling), `219 passed, 2 skipped` (`90.81%` cov), `26/26` Python SDK, `24/24` JS SDK, `pip-audit` 0 CVEs, Semgrep `0` findings (`132` files), `dle-middleware:phase5` live E2E (`LIVE_E2E_PHASE5_OK`, ZIP export `5` entries), and published `reports/phase5_gate.md`.
+
+**Next.** Execute **Phase 6 (Calibration Pilot & Strict Release Mode)**: build `offline/calibrate.py` (`O1` / `DVSS-P14`) computing CRC cutoff `t_hat` (`alpha=0.05`) and fixed-baseline CUSUM (`mu_0`, `delta=0.02`, `lambda`) while enforcing `offline/registry/heldout_hashes.json` exclusion, grade ~100 pilot queries (2 blind graders + adjudication, `kappa >= 0.6`), produce active `strict` calibration artifact, verify drift latch + reset + export recovery, and publish `reports/phase6_gate.md`.
+
 ## 2026-11-23 — Phase 5 Wave 5A: Hybrid Intake Router (H2 / DVSS-K10), Call Budgets, Cost Metering & Admin APIs
 
 **State.** Phase 5 Wave 5A complete (`FR-TIER-01..04`, `DVSS-K10`, `DLE-SPC-002`, `NFR-COST-01`, `US-14`, `US-15`). Complete `H2` hybrid intake scoring (`D/R/M/B/Z`, `S_eff = max(S, 3B, 6Z)`), `ModelCallBudget` (`9/21` Tier 1, `18/22` Tier 2, `18` Tier 3), real token cost metering into `ops.db`, 50-item dev challenge set (>= 95% recall verified), and Phase 5 admin routes (`/admin/function-flags`, `/admin/metrics/cost-by-tier`) are built and verified.

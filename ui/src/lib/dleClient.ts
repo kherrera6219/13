@@ -5,10 +5,13 @@ import type {
   ClaimRow,
   ClaimStatus,
   CoordinateSummary,
+  CostByTierDay,
   DleHeaders,
   EvidenceSource,
+  FunctionFlagsResponse,
   GraphSummary,
   HealthStatus,
+  IntakeSummary,
   PersonaObjectionItem,
   PersonaSummary,
   ReleaseMode,
@@ -286,6 +289,99 @@ export async function registerSource(
   return (await resp.json()) as EvidenceSource;
 }
 
+export async function resetDriftLatch(
+  baseUrl: string,
+  adminKey: string,
+  calibrationArtifactId: string,
+): Promise<void> {
+  const target = `${baseUrl.replace(/\/$/, "")}/admin/drift/reset`;
+  const resp = await fetch(target, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-DLE-Admin-Key": adminKey,
+    },
+    body: JSON.stringify({
+      calibrationArtifactId: calibrationArtifactId.trim(),
+      confirm: "RESET",
+    }),
+  });
+  if (!resp.ok) {
+    throw new Error(`Drift reset returned HTTP ${resp.status}`);
+  }
+}
+
+export async function fetchFunctionFlags(
+  baseUrl: string,
+  adminKey: string,
+): Promise<FunctionFlagsResponse> {
+  const target = `${baseUrl.replace(/\/$/, "")}/admin/function-flags`;
+  const resp = await fetch(target, {
+    headers: { "X-DLE-Admin-Key": adminKey },
+  });
+  if (!resp.ok) {
+    throw new Error(`Function flags lookup returned HTTP ${resp.status}`);
+  }
+  return (await resp.json()) as FunctionFlagsResponse;
+}
+
+export async function updateFunctionFlags(
+  baseUrl: string,
+  adminKey: string,
+  payload: FunctionFlagsResponse,
+): Promise<FunctionFlagsResponse> {
+  const target = `${baseUrl.replace(/\/$/, "")}/admin/function-flags`;
+  const resp = await fetch(target, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      "X-DLE-Admin-Key": adminKey,
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!resp.ok) {
+    throw new Error(`Update function flags returned HTTP ${resp.status}`);
+  }
+  return (await resp.json()) as FunctionFlagsResponse;
+}
+
+export async function fetchCostByTier(
+  baseUrl: string,
+  adminKey: string,
+  days = 7,
+): Promise<CostByTierDay[]> {
+  const target = `${baseUrl.replace(/\/$/, "")}/admin/metrics/cost-by-tier?days=${encodeURIComponent(String(days))}`;
+  const resp = await fetch(target, {
+    headers: { "X-DLE-Admin-Key": adminKey },
+  });
+  if (!resp.ok) {
+    throw new Error(`Cost metrics lookup returned HTTP ${resp.status}`);
+  }
+  const body = (await resp.json()) as { days?: CostByTierDay[] };
+  return Array.isArray(body.days) ? body.days : [];
+}
+
+export async function exportReceiptsBundle(
+  baseUrl: string,
+  adminKey: string,
+  fromIso: string,
+  toIso: string,
+): Promise<Blob> {
+  const target = `${baseUrl.replace(/\/$/, "")}/admin/receipts/export`;
+  const resp = await fetch(target, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-DLE-Admin-Key": adminKey,
+    },
+    body: JSON.stringify({ from: fromIso, to: toIso }),
+  });
+  if (!resp.ok) {
+    throw new Error(`Receipt export returned HTTP ${resp.status}`);
+  }
+  return await resp.blob();
+}
+
 export async function sendChatMessage(input: SendMessageInput): Promise<SendMessageResult> {
   let captured: DleHeaders = {
     releaseMode: "passthrough",
@@ -296,6 +392,7 @@ export async function sendChatMessage(input: SendMessageInput): Promise<SendMess
   let capturedCoordinate: CoordinateSummary | null = null;
   let capturedGraph: GraphSummary | null = null;
   let capturedRunSummary: RunSummary | null = null;
+  let capturedIntake: IntakeSummary | null = null;
   let capturedPersonas: PersonaSummary[] = [];
   let capturedSteps: StepTraceItem[] = [];
 
@@ -317,6 +414,9 @@ export async function sendChatMessage(input: SendMessageInput): Promise<SendMess
     }
     if (rec.runSummary && typeof rec.runSummary === "object") {
       capturedRunSummary = rec.runSummary as RunSummary;
+    }
+    if (rec.intake && typeof rec.intake === "object") {
+      capturedIntake = rec.intake as IntakeSummary;
     }
     if (Array.isArray(rec.personas)) {
       capturedPersonas = rec.personas as PersonaSummary[];
@@ -461,6 +561,7 @@ export async function sendChatMessage(input: SendMessageInput): Promise<SendMess
     coordinate: capturedCoordinate,
     graph: capturedGraph,
     runSummary: capturedRunSummary,
+    intake: capturedIntake,
     personas: capturedPersonas,
     steps: capturedSteps,
     objections,
