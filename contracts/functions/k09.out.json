@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/k09.out.json",
+  "title": "DVSS_K09_Output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["action", "reason", "candidate_id", "next_source", "hop_increment"],
+  "properties": {
+    "action": { "type": "string", "enum": ["retry", "terminal"] },
+    "reason": { "type": "string", "minLength": 1 },
+    "candidate_id": { "type": "string", "minLength": 1 },
+    "next_source": { "type": ["string", "null"] },
+    "hop_increment": { "type": "integer", "enum": [0, 1] }
+  }
+}

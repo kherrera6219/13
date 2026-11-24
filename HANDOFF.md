@@ -2,6 +2,19 @@
 
 Running record for agents. Newest entry first. Keep each entry short: what changed, what was learned, what is next.
 
+## 2026-11-23 — Phase 4 Wave 4B: 12-Step FROST Orchestrator, Cutoff-Blind Retries K09, Escalation P07 & Tool Parking
+
+**State.** Phase 4 Wave 4B complete (`FR-WF-01..07`, `FR-FL-01..07`, `FR-QP-06`, `FR-TOOL-02..05`, `DVSS-K09`, `DVSS-P07`). Full 12-step governed loop (`s01_ingest`..`s12_seal`) across all 10 FROST layers (`l01_grounding`..`l10_receipt`) is wired into `dle/host/workflow/governed.py` and `dle/edge/gateway.py` with cutoff-blind `<= 2` retries (`DVSS-K09`), one-time binding/consequential Regulator escalation (`DVSS-P07`), blinded assurance ordering, Step-4 tool park/resume, and end-to-end §18 conformance tests on both `FakeModel` and `FakeUpstream`.
+
+**Changed.**
+- `dle/host/frost/`: Added 10-layer FROST stack constants and deterministic `FrostTrace` metadata collector (`s01`–`s12`, `l01`–`l10`).
+- `dle/host/services/policy_control.py` & `contracts/functions/{k09,p07}.{in,out}.json`: Implemented strictly cutoff-blind `decide_retry_policy` (`DVSS-K09`), one-time `evaluate_binding_escalation` (`DVSS-P07`), and `check_consequential_functions` (`config/function_flags.yaml`).
+- `dle/models/fake.py` & `tests/gemini_compat/fake_upstream.py`: Added shared `extract_writer_question` / `_build_fake_role_artifact` support for `job="personas"` and `writer-1.0.0` JSON packets.
+- `dle/host/workflow/governed.py`, `dle/host/workflow/__init__.py`, `dle/edge/gateway.py`: Wired multi-attempt loop, H8 personas, `LedgerService`, `Pareto`, `WriterService`, Step-4 `ToolBridge`/`parked_runs`, `run_governed_workflow` alias, and `dleMetadata.runSummary`/`personas`/`steps`.
+- Added `tests/unit/host/services/test_policy_control_and_frost.py` (including Hypothesis cutoff-blind property checks) and `tests/engines/test_phase4_orchestrator_conformance.py`.
+
+**Next.** Execute **Phase 4 Wave 4C (Phase 4 Exit Gate)**: implement Browser Inspector UI `RunSummaryCard`, `PersonaChips`, `StepTimeline`, and `PersonaDrawer` + Storybook/axe tests, rebuild `dle-middleware:phase4` Docker image & run live E2E probe, verify `pip-audit`, Semgrep & JS/Python compat, and publish `reports/phase4_gate.md`.
+
 ## 2026-11-23 — Phase 4 Wave 4A: Quad Persona Engine, Reference Catalog, Verifier Ledger, Pareto & Writer (H8, H9, H11)
 
 **State.** Phase 4 Wave 4A complete (`DVSS-K03`, `DVSS-K12`, `DVSS-P02`, `DVSS-P08`, `DVSS-P10`, `DVSS-P11`, `FR-QP-01..08`, `FR-VER-02`, `DLE-SPC-004`, `DLE-PRM-002`). Dynamic 7-field MDKF profiles (`[ROLE:8..11.<n>]`), build-time CIP/SOC/O*NET reference staging & validation, blinded/Tier-3 falsification role packets, append-only SQLite verifier ledger, Pareto frontier filtering, and `writer-1.0.0` synthesis service are built and verified.

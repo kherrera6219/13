@@ -14,6 +14,7 @@ from collections.abc import AsyncIterator, Mapping
 from dataclasses import dataclass
 
 from dle.errors import UpstreamApiError
+from dle.models.fake import _build_fake_role_artifact, extract_writer_question
 from dle.models.port import ModelCallResult
 from dle.models.registry import ModelRegistry
 
@@ -371,7 +372,9 @@ class FakeUpstream:
             if isinstance(thinking_cfg, Mapping):
                 parts.append({"thought": True, "text": "Reasoning step 1: check constraints."})
 
-            if (
+            if job == "personas":
+                parts.append({"text": _build_fake_role_artifact(body)})
+            elif (
                 isinstance(gen_cfg, Mapping)
                 and gen_cfg.get("responseMimeType") == "application/json"
             ):
@@ -383,7 +386,7 @@ class FakeUpstream:
             elif inline_mimes := _inline_mime_types(body):
                 parts.append({"text": f"Processed inline image input ({', '.join(inline_mimes)})."})
             elif job == "writer":
-                parts.append({"text": texts[-1] if texts else "ok"})
+                parts.append({"text": extract_writer_question(texts[-1] if texts else "ok")})
             else:
                 turn_count = (
                     len(body.get("contents", [])) if isinstance(body.get("contents"), list) else 1

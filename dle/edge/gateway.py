@@ -49,7 +49,9 @@ from dle.host.services import (
     Ed25519KeyManager,
     EvidenceService,
     ReceiptSealer,
+    ReferenceCatalog,
     RegistrySnapshot,
+    load_reference_catalog,
     load_registry,
 )
 from dle.host.workflow import (
@@ -73,6 +75,7 @@ from dle.store import (
     EvidenceRepository,
     OpsRepository,
     ReceiptRepository,
+    RegistryRepository,
     SessionRepository,
     StoreBundle,
     open_stores,
@@ -122,6 +125,7 @@ class GatewayRuntime:
     evidence_repo: EvidenceRepository
     session_repo: SessionRepository
     receipt_repo: ReceiptRepository
+    registry_repo: RegistryRepository
     ops_repo: OpsRepository
     embeddings: EmbeddingService
     nli_scorer: NliScorer
@@ -131,6 +135,7 @@ class GatewayRuntime:
     key_manager: Ed25519KeyManager
     receipt_sealer: ReceiptSealer
     registry_snapshot: RegistrySnapshot
+    reference_catalog: ReferenceCatalog | None = None
     calibration: CalibrationArtifact | None = DEFAULT_PHASE2_CALIBRATION
     egress: EgressClient | None = None
 
@@ -299,7 +304,14 @@ def create_app(
     evidence_repo = EvidenceRepository(stores.evidence, vec_enabled=stores.vec_enabled)
     session_repo = SessionRepository(stores.sessions)
     receipt_repo = ReceiptRepository(stores.receipts)
+    registry_repo = RegistryRepository(stores.registry)
     ops_repo = OpsRepository(stores.ops)
+    ref_manifest = eff_settings.config_dir / "reference" / "manifest.yaml"
+    reference_catalog = (
+        load_reference_catalog(ref_manifest, ref_dir=ref_manifest.parent)
+        if ref_manifest.is_file()
+        else None
+    )
     embeddings = EmbeddingService(eff_model_port, eff_registry)
 
     if nli_scorer is not None:
@@ -343,6 +355,7 @@ def create_app(
         evidence_repo=evidence_repo,
         session_repo=session_repo,
         receipt_repo=receipt_repo,
+        registry_repo=registry_repo,
         ops_repo=ops_repo,
         embeddings=embeddings,
         nli_scorer=eff_nli,
@@ -352,6 +365,7 @@ def create_app(
         key_manager=key_manager,
         receipt_sealer=receipt_sealer,
         registry_snapshot=registry_snapshot,
+        reference_catalog=reference_catalog,
         calibration=calibration,
         egress=egress,
     )
@@ -579,16 +593,24 @@ def create_app(
             api_key=upstream_key,
             registry_snapshot=runtime.registry_snapshot,
             enable_ppr=runtime.settings.enable_ppr,
+            registry_repo=runtime.registry_repo,
+            reference_catalog=runtime.reference_catalog,
+            tool_bridge=runtime.tool_bridge,
+            tenant=tenant,
+            explicit_session=explicit_session,
         )
-        out_body, headers = runtime.composer.compose_governed(
-            release_mode=gov_res.release_mode,
-            receipt_id=gov_res.receipt_id,
-            tier=gov_res.tier,
-            body=gov_res.body,
-            notice_id=gov_res.notice_id,
-            hold_reason=gov_res.hold_reason,
-            rendered_body_complete=True,
-        )
+        if gov_res.release_mode == "passthrough":
+            out_body, headers = runtime.composer.compose_passthrough(gov_res.body)
+        else:
+            out_body, headers = runtime.composer.compose_governed(
+                release_mode=gov_res.release_mode,
+                receipt_id=gov_res.receipt_id,
+                tier=gov_res.tier,
+                body=gov_res.body,
+                notice_id=gov_res.notice_id,
+                hold_reason=gov_res.hold_reason,
+                rendered_body_complete=True,
+            )
         _record_http_metric("/v1beta/models/{model}:generateContent", 200)
         log.info(
             "gateway.generate",
@@ -647,7 +669,14 @@ def create_app(
                     api_key=upstream_key,
                     registry_snapshot=runtime.registry_snapshot,
                     enable_ppr=runtime.settings.enable_ppr,
+                    registry_repo=runtime.registry_repo,
+                    reference_catalog=runtime.reference_catalog,
+                    tool_bridge=runtime.tool_bridge,
+                    tenant=tenant,
+                    explicit_session=explicit_session,
                 )
+                if gov_res.release_mode == "passthrough":
+                    return runtime.composer.compose_passthrough(gov_res.body)
                 return runtime.composer.compose_governed(
                     release_mode=gov_res.release_mode,
                     receipt_id=gov_res.receipt_id,

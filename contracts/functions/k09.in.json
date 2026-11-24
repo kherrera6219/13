@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/k09.in.json",
+  "title": "DVSS_K09_Input",
+  "description": "Strictly cutoff-blind retry policy input (no cutoff, threshold, drift_latched, or labels).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "retries_used",
+    "has_recoverable_gap",
+    "has_permanent_veto",
+    "new_evidence_found",
+    "resolved",
+    "candidate_id"
+  ],
+  "properties": {
+    "retries_used": { "type": "integer", "minimum": 0, "maximum": 2 },
+    "max_retries": { "type": "integer", "minimum": 0, "maximum": 2 },
+    "has_recoverable_gap": { "type": "boolean" },
+    "gap_reason": { "type": ["string", "null"] },
+    "authorized_next_source": { "type": ["string", "null"] },
+    "has_permanent_veto": { "type": "boolean" },
+    "new_evidence_found": { "type": "boolean" },
+    "resolved": { "type": "boolean" },
+    "candidate_id": { "type": "string", "minLength": 1 }
+  }
+}

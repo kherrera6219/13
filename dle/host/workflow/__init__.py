@@ -4,6 +4,7 @@ from dle.host.workflow.governed import (
     DEFAULT_PHASE2_CALIBRATION,
     GovernedRunResult,
     run_governed_phase2,
+    run_governed_workflow,
     seal_cancelled_receipt,
 )
 from dle.host.workflow.stub import GovernedStubResult, run_governed_stub
@@ -14,5 +15,6 @@ __all__ = [
     "GovernedStubResult",
     "run_governed_phase2",
     "run_governed_stub",
+    "run_governed_workflow",
     "seal_cancelled_receipt",
 ]

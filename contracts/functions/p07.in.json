@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/p07.in.json",
+  "title": "DVSS_P07_Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tier",
+    "s_score",
+    "z_flag",
+    "active_roles",
+    "has_binding_claim",
+    "escalated_once"
+  ],
+  "properties": {
+    "tier": { "type": "integer", "enum": [1, 2, 3] },
+    "s_score": { "type": "integer", "minimum": 0 },
+    "z_flag": { "type": "integer", "enum": [0, 1] },
+    "active_roles": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "has_binding_claim": { "type": "boolean" },
+    "escalated_once": { "type": "boolean" },
+    "consequential_tool_used": { "type": "boolean" }
+  }
+}

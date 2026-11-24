@@ -131,6 +131,19 @@ def _build_fake_role_artifact(payload: Mapping[str, object]) -> str:
     return json.dumps(artifact)
 
 
+def extract_writer_question(prompt_summary: str) -> str:
+    """Unwrap structured ``writer-1.0.0`` JSON packets to return the question prose."""
+    first_line = prompt_summary.splitlines()[0].strip() if prompt_summary else ""
+    if first_line.startswith("{"):
+        try:
+            parsed = json.loads(first_line)
+            if isinstance(parsed, Mapping) and isinstance(parsed.get("question"), str):
+                return parsed["question"] or "ok"
+        except json.JSONDecodeError:
+            pass
+    return prompt_summary
+
+
 def _count_text_tokens(payload: Mapping[str, object]) -> int:
     total_words = 0
     for key in ("contents", "generateContentRequest"):
@@ -201,7 +214,7 @@ class FakeModel:
         elif isinstance(gen_cfg, Mapping) and gen_cfg.get("responseMimeType") == "application/json":
             response_text = json.dumps({"echo": prompt_summary, "job": job})
         elif job == "writer":
-            response_text = prompt_summary
+            response_text = extract_writer_question(prompt_summary)
         else:
             response_text = f"[{clean}] {prompt_summary}"
 
@@ -395,4 +408,10 @@ class FakeModel:
         return self._reachable
 
 
-__all__ = ["FakeGenerateHandler", "FakeModel", "RecordedModelCall"]
+__all__ = [
+    "FakeGenerateHandler",
+    "FakeModel",
+    "RecordedModelCall",
+    "_build_fake_role_artifact",
+    "extract_writer_question",
+]
