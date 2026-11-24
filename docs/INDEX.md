@@ -77,7 +77,7 @@ Every document, specification, contract and plan for the DataLogicEngine 13-axis
 | — | Role artifact schema | `contracts/role_artifact.schema.json` | 1.0.0 |
 | — | Claim extraction output schema | `contracts/prompts/claim_extraction.schema.json` | 1.0.0 |
 | FR-FN-01 | Bound function catalog schema | `contracts/functions.schema.json` | 1.0.0 |
-| — | Function I/O schemas (written per phase) | `contracts/functions/` | — |
+| — | Function I/O schemas (all 26 DVSS bindings, 52 paired schemas) | `contracts/functions/` | 1.0.0 |
 
 ## 6. Specifications
 
