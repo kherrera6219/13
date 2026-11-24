@@ -2,6 +2,19 @@
 
 Running record for agents. Newest entry first. Keep each entry short: what changed, what was learned, what is next.
 
+## 2026-11-24 — Phase 7 Wave 7B Complete (v0.1.0 Release Gate, O3 Study, System Card, SBOM & Egress Attestation)
+
+**State.** Phase 7 (`DLE-EVL-003` / `O3`, `DLE-AIM`, `DLE-SEC-002 §2`, `DLE-CMR §10`) and the full Phases 0–7 build plan are complete and cleared via `reports/phase7_gate.md` (`dle-middleware:release`, `dle-middleware:0.1.0`).
+
+**Changed.**
+- `dle/host/services/evaluation.py`, `dle/tools/evaluate.py`, `offline/evaluate.py`: Implemented `O3` pre-registered §17 evaluation engine (Clopper-Pearson binomial bounds, family-clustered paired bootstrap, verify-and-gate baseline, held-out SHA-256 seal check, `H1`–`H4` & `M1`–`M2` endpoints, `render_system_card`).
+- `offline/study/{heldout_eval_150,heldout_challenge_100}.jsonl` & `offline/dev_sets/extractor_labeled_200.jsonl`: Materialized the 250 sealed held-out study items (matching `offline/registry/heldout_hashes.json`) and 200-draft labeled extractor set.
+- `reports/`: Generated `evaluation_study_report.md`, `evaluation_study_results.json`, `system_card.md`, CycloneDX 1.6 `sbom.cdx.json` (`51` components), `egress_attestation.md`, and `phase7_gate.md` (`H3` supported `0.0` loss / `0.42` cov; `M1` supported `1.0` recall; `H4` `0.4` recall `below_threshold` under offline `FakeModel` stub; `H1`/`H2`/`M2` `no_directional_difference`).
+- `tests/security/test_deny_all_egress.py` & `tests/unit/offline/test_evaluation_study.py`: Verified deny-all egress (`generativelanguage.googleapis.com:443` only), binomial bounds, bootstrap determinism, seal tampering refusal, System Card, and SBOM (`11 passed`).
+- Full verification: `243 passed, 2 skipped` (`87.49%` cov), `mypy --strict` `73` files, `ruff`, `validate_contracts`, `check_egress_imports`, `26/26` Python SDK, `24/24` JS SDK, `68/68` UI Storybook + `axe-core`, `pip-audit` `0` CVEs, Semgrep `0` findings (`153` files), and `dle-middleware:release` live E2E (`LIVE_E2E_RELEASE_OK`, `VERIFIED: /tmp/release_bundle.zip`).
+
+**Next.** External operational sign-offs prior to external production deployment: live Gemini cloud `O3` study + paid-tier data-governance review, SLSA Level 3 / Sigstore release signing in CI, FIPS 140-3 crypto validation, and third-party pentest (`docs/security/product_security_package.md`).
+
 ## 2026-11-23 — Phase 7 Wave 7A: DVSS-P05, DVSS-P09, 52/52 Contracts & Pluggable Anchoring
 
 **State.** Phase 7 Wave 7A (`DVSS-P05`, `DVSS-P09`, `DVSS-K01` paired contract completion -> 26/26 DVSS bindings / 52 schemas, and pluggable `AnchorProvider` receipt anchoring across `local_worm_merkle`, `customer_hosted_log`, and `external_transparency_log`) is complete and verified.

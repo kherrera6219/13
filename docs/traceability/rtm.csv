@@ -9,7 +9,7 @@ FR-WF-01..07,H1,dle/host/workflow/governed.py;tests/engines/test_phase4_orchestr
 FR-FL-01..07,frost/l01..l10,dle/host/frost/layers.py;tests/unit/host/services/test_policy_control_and_frost.py;tests/engines/test_phase4_orchestrator_conformance.py,2-4,implemented (Wave 4B)
 FR-QP-01..08,H8,dle/host/services/personas.py;dle/host/services/reference.py;dle/tools/fetch_reference.py;tests/unit/host/services/test_personas_and_reference.py,4,implemented (Wave 4A)
 FR-TIER-01..04,"H2,tiers.yaml",dle/host/services/intake.py;dle/host/functions/stubs.py;tests/unit/host/services/test_intake_router.py,5,verified (Phase 5)
-FR-FN-01..09,"H16,functions/",T-ENG-FN-01..12;T-EVAL-ABL-01,"2-5,7",planned
+FR-FN-01..09,"H16,functions/,dle/host/services/promotion.py,dle/host/services/analogy.py,dle/host/services/evaluation.py",T-ENG-FN-01..12;T-EVAL-ABL-01,"2-5,7",implemented
 FR-VER-01..03,"H10-H12,M3",tests/contract/prompts/test_claim_extractor.py;tests/unit/host/services/test_verifier_and_scorer.py;tests/unit/host/services/test_evidence.py,"2,4",implemented (Phase 2)
 FR-REL-01..04,"H13,H14,O1",tests/unit/host/services/test_verifier_and_scorer.py;tests/unit/host/services/test_release_and_receipts.py;tests/unit/offline/test_calibration_and_drift.py,"2,6",verified (Phase 6)
 FR-RCPT-01..03,H15,tests/unit/host/services/test_release_and_receipts.py;dle/tools/verify_receipt.py,2,implemented
@@ -17,7 +17,7 @@ FR-UI-01..02,C1,ui/src/stories.test.tsx;ui/src/components/*.stories.tsx;ui/src/A
 NFR-PERF-01..02,runtime,reports/phase1_gate.md;reports/phase5_gate.md;tests/unit/edge/test_streaming.py,"1,5",verified (p95=39.639 ms)
 NFR-REL-01..02,"M1,H14",tests/unit/models/test_port_and_gemini.py,1,implemented
 NFR-SEC-01..04,"E1,M1,keys",tests/unit/edge/test_gateway.py;tests/unit/models/test_egress.py,1,implemented
-NFR-PRIV-01..02,stores,T-SEC-13..18,2,planned
+NFR-PRIV-01..02,"stores,dle/models/egress.py,tests/security/test_deny_all_egress.py,reports/egress_attestation.md",T-SEC-13..18,"2,7",implemented
 NFR-MAINT-01;NFR-PORT-01,all,CI,all,implemented
 NFR-OBS-01;NFR-COST-01,"M1,ops.db",tests/unit/test_observability.py;tests/unit/models/test_registry.py;tests/unit/host/services/test_intake_router.py,"1,5",verified (Phase 5)
 NFR-ACC-01,C1,ui/src/stories.test.tsx;ui/src/tokens.css,5,verified (WCAG AA + axe 68/68)
@@ -60,3 +60,4 @@ DVSS-K10;FR-TIER-01..04;DLE-SPC-002;NFR-COST-01,"dle/host/services/intake.py,dle
 US-03..17;FR-UI-01..02;NFR-ACC-01;NFR-PERF-01,"ui/src/types/dle.ts,ui/src/lib/dleClient.ts,ui/src/App.tsx,ui/src/components/DriftBanner.tsx,ui/src/components/FunctionFlagsEditor.tsx,ui/src/components/CostByTierChart.tsx,ui/src/components/HealthPanel.tsx,ui/src/components/ExportDialog.tsx",ui/src/stories.test.tsx;reports/phase5_gate.md,5,verified (Wave 5B)
 O1;DVSS-P14;DLE-EVL-001;DLE-EVL-002;FR-REL-01..04,"dle/host/services/calibration.py,dle/tools/calibrate.py,offline/calibrate.py,dle/host/services/release.py,dle/edge/settings.py,dle/edge/gateway.py,contracts/calibration.schema.json,contracts/functions/p14.in.json,contracts/functions/p14.out.json,offline/registry/heldout_hashes.json,offline/pilot/pilot_graded_100.jsonl,config/calibration/cal-phase6-v1.json",tests/unit/offline/test_calibration_and_drift.py;reports/phase6_gate.md,6,verified (Phase 6)
 DVSS-K01;DVSS-P05;DVSS-P09;FR-RCPT-01..03,"dle/host/services/promotion.py,dle/host/services/analogy.py,dle/host/services/anchoring.py,dle/host/services/receipts.py,dle/host/functions/stubs.py,dle/host/workflow/governed.py,contracts/functions/k01.{in,out}.json,contracts/functions/p05.{in,out}.json,contracts/functions/p09.{in,out}.json",tests/unit/host/services/test_phase7_policy_and_anchoring.py,7,implemented (Wave 7A)
+DLE-EVL-003;DLE-AIM;DLE-SEC-002;DLE-CMR-10,"dle/host/services/evaluation.py,dle/tools/evaluate.py,offline/evaluate.py,reports/evaluation_study_report.md,reports/evaluation_study_results.json,reports/system_card.md,reports/sbom.cdx.json,reports/egress_attestation.md",tests/unit/offline/test_evaluation_study.py;tests/security/test_deny_all_egress.py,7,implemented (Wave 7B)

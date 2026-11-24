@@ -1,0 +1,445 @@
+{
+  "arms": {
+    "kernel_only": {
+      "accepted_count": 63,
+      "accepted_error_count_conservative": 0,
+      "accepted_loss_rate": 0.0,
+      "accepted_loss_sum": 0.0,
+      "accepted_loss_upper_95": 0.019773,
+      "arm": "kernel_only",
+      "conditional_accepted_loss": 0.0,
+      "coverage": 0.42,
+      "function_outcome_counts": {
+        "DVSS-K01:ok": 150,
+        "DVSS-K02:ok": 150,
+        "DVSS-K03:ok": 150,
+        "DVSS-K04:hold": 79,
+        "DVSS-K04:ok": 71,
+        "DVSS-K05:ok": 150,
+        "DVSS-K06:ok": 150,
+        "DVSS-K07:ok": 150,
+        "DVSS-K08:ok": 150,
+        "DVSS-K09:ok": 150,
+        "DVSS-K10:ok": 150,
+        "DVSS-K11:hold": 87,
+        "DVSS-K11:ok": 63,
+        "DVSS-K12:ok": 150,
+        "DVSS-P01:skipped": 150,
+        "DVSS-P02:skipped": 150,
+        "DVSS-P03:skipped": 150,
+        "DVSS-P06:skipped": 150,
+        "DVSS-P07:ok": 150,
+        "DVSS-P08:ok": 150,
+        "DVSS-P09:skipped": 150,
+        "DVSS-P10:skipped": 150,
+        "DVSS-P11:skipped": 150
+      },
+      "kappa": 0.804704,
+      "n": 150,
+      "notice_counts": {
+        "NOTICE-HOLD-02": 19,
+        "NOTICE-HOLD-03": 60,
+        "NOTICE-HOLD-04": 8,
+        "NOTICE-REL-01": 63
+      },
+      "over_abstention_count": 54,
+      "over_abstention_rate": 0.461538,
+      "per_tier_metrics": {
+        "tier_2": {
+          "count": 112,
+          "mean_cost_usd": 0.003177,
+          "mean_duration_ms": 44.965
+        },
+        "tier_3": {
+          "count": 38,
+          "mean_cost_usd": 0.004091,
+          "mean_duration_ms": 48.924
+        }
+      },
+      "rubric_loss_mean": 0.36,
+      "total_cost_usd": 0.511314
+    },
+    "kernel_plus_policy": {
+      "accepted_count": 63,
+      "accepted_error_count_conservative": 0,
+      "accepted_loss_rate": 0.0,
+      "accepted_loss_sum": 0.0,
+      "accepted_loss_upper_95": 0.019773,
+      "arm": "kernel_plus_policy",
+      "conditional_accepted_loss": 0.0,
+      "coverage": 0.42,
+      "function_outcome_counts": {
+        "DVSS-K01:ok": 150,
+        "DVSS-K02:ok": 150,
+        "DVSS-K03:ok": 150,
+        "DVSS-K04:hold": 79,
+        "DVSS-K04:ok": 71,
+        "DVSS-K05:ok": 150,
+        "DVSS-K06:ok": 150,
+        "DVSS-K07:ok": 150,
+        "DVSS-K08:ok": 150,
+        "DVSS-K09:ok": 150,
+        "DVSS-K10:ok": 150,
+        "DVSS-K11:hold": 87,
+        "DVSS-K11:ok": 63,
+        "DVSS-K12:ok": 150,
+        "DVSS-P01:skipped": 150,
+        "DVSS-P02:skipped": 150,
+        "DVSS-P03:skipped": 150,
+        "DVSS-P06:skipped": 150,
+        "DVSS-P07:ok": 150,
+        "DVSS-P08:ok": 150,
+        "DVSS-P09:skipped": 150,
+        "DVSS-P10:skipped": 150,
+        "DVSS-P11:skipped": 150
+      },
+      "kappa": 0.756244,
+      "n": 150,
+      "notice_counts": {
+        "NOTICE-HOLD-02": 19,
+        "NOTICE-HOLD-03": 60,
+        "NOTICE-HOLD-04": 8,
+        "NOTICE-REL-01": 63
+      },
+      "over_abstention_count": 54,
+      "over_abstention_rate": 0.461538,
+      "per_tier_metrics": {
+        "tier_2": {
+          "count": 112,
+          "mean_cost_usd": 0.003177,
+          "mean_duration_ms": 48.949
+        },
+        "tier_3": {
+          "count": 38,
+          "mean_cost_usd": 0.004091,
+          "mean_duration_ms": 64.065
+        }
+      },
+      "rubric_loss_mean": 0.36,
+      "total_cost_usd": 0.511314
+    },
+    "single_reviewer": {
+      "accepted_count": 63,
+      "accepted_error_count_conservative": 0,
+      "accepted_loss_rate": 0.0,
+      "accepted_loss_sum": 0.0,
+      "accepted_loss_upper_95": 0.019773,
+      "arm": "single_reviewer",
+      "conditional_accepted_loss": 0.0,
+      "coverage": 0.42,
+      "function_outcome_counts": {
+        "DVSS-K01:ok": 150,
+        "DVSS-K02:ok": 150,
+        "DVSS-K03:ok": 188,
+        "DVSS-K04:hold": 79,
+        "DVSS-K04:ok": 71,
+        "DVSS-K05:ok": 188,
+        "DVSS-K06:ok": 188,
+        "DVSS-K07:ok": 188,
+        "DVSS-K08:ok": 188,
+        "DVSS-K09:ok": 150,
+        "DVSS-K10:ok": 150,
+        "DVSS-K11:hold": 87,
+        "DVSS-K11:ok": 63,
+        "DVSS-K12:ok": 188,
+        "DVSS-P01:skipped": 188,
+        "DVSS-P02:skipped": 188,
+        "DVSS-P03:skipped": 150,
+        "DVSS-P06:skipped": 188,
+        "DVSS-P07:ok": 188,
+        "DVSS-P08:ok": 188,
+        "DVSS-P09:skipped": 188,
+        "DVSS-P10:skipped": 188,
+        "DVSS-P11:skipped": 188
+      },
+      "kappa": 0.793103,
+      "n": 150,
+      "notice_counts": {
+        "NOTICE-HOLD-02": 19,
+        "NOTICE-HOLD-03": 60,
+        "NOTICE-HOLD-04": 8,
+        "NOTICE-REL-01": 63
+      },
+      "over_abstention_count": 54,
+      "over_abstention_rate": 0.461538,
+      "per_tier_metrics": {
+        "tier_1": {
+          "count": 112,
+          "mean_cost_usd": 0.001084,
+          "mean_duration_ms": 32.247
+        },
+        "tier_2": {
+          "count": 38,
+          "mean_cost_usd": 0.003648,
+          "mean_duration_ms": 63.578
+        }
+      },
+      "rubric_loss_mean": 0.36,
+      "total_cost_usd": 0.259976
+    },
+    "strict": {
+      "accepted_count": 63,
+      "accepted_error_count_conservative": 0,
+      "accepted_loss_rate": 0.0,
+      "accepted_loss_sum": 0.0,
+      "accepted_loss_upper_95": 0.019773,
+      "arm": "strict",
+      "conditional_accepted_loss": 0.0,
+      "coverage": 0.42,
+      "function_outcome_counts": {
+        "DVSS-K01:ok": 150,
+        "DVSS-K02:ok": 150,
+        "DVSS-K03:ok": 150,
+        "DVSS-K04:hold": 79,
+        "DVSS-K04:ok": 71,
+        "DVSS-K05:ok": 150,
+        "DVSS-K06:ok": 150,
+        "DVSS-K07:ok": 150,
+        "DVSS-K08:ok": 150,
+        "DVSS-K09:ok": 150,
+        "DVSS-K10:ok": 150,
+        "DVSS-K11:hold": 87,
+        "DVSS-K11:ok": 63,
+        "DVSS-K12:ok": 150,
+        "DVSS-P01:skipped": 150,
+        "DVSS-P02:skipped": 150,
+        "DVSS-P03:skipped": 150,
+        "DVSS-P06:skipped": 150,
+        "DVSS-P07:ok": 150,
+        "DVSS-P08:ok": 150,
+        "DVSS-P09:skipped": 150,
+        "DVSS-P10:skipped": 150,
+        "DVSS-P11:skipped": 150
+      },
+      "kappa": 0.930284,
+      "n": 150,
+      "notice_counts": {
+        "NOTICE-HOLD-02": 19,
+        "NOTICE-HOLD-03": 60,
+        "NOTICE-HOLD-04": 8,
+        "NOTICE-REL-01": 63
+      },
+      "over_abstention_count": 54,
+      "over_abstention_rate": 0.461538,
+      "per_tier_metrics": {
+        "tier_2": {
+          "count": 112,
+          "mean_cost_usd": 0.003177,
+          "mean_duration_ms": 47.989
+        },
+        "tier_3": {
+          "count": 38,
+          "mean_cost_usd": 0.004091,
+          "mean_duration_ms": 46.346
+        }
+      },
+      "rubric_loss_mean": 0.36,
+      "total_cost_usd": 0.511314
+    },
+    "unaddressed": {
+      "accepted_count": 63,
+      "accepted_error_count_conservative": 0,
+      "accepted_loss_rate": 0.0,
+      "accepted_loss_sum": 0.0,
+      "accepted_loss_upper_95": 0.019773,
+      "arm": "unaddressed",
+      "conditional_accepted_loss": 0.0,
+      "coverage": 0.42,
+      "function_outcome_counts": {
+        "DVSS-K01:ok": 150,
+        "DVSS-K02:ok": 150,
+        "DVSS-K03:ok": 150,
+        "DVSS-K04:hold": 79,
+        "DVSS-K04:ok": 71,
+        "DVSS-K05:ok": 150,
+        "DVSS-K06:ok": 150,
+        "DVSS-K07:ok": 150,
+        "DVSS-K08:ok": 150,
+        "DVSS-K09:ok": 150,
+        "DVSS-K10:ok": 150,
+        "DVSS-K11:hold": 87,
+        "DVSS-K11:ok": 63,
+        "DVSS-K12:ok": 150,
+        "DVSS-P01:skipped": 150,
+        "DVSS-P02:skipped": 150,
+        "DVSS-P03:skipped": 150,
+        "DVSS-P06:skipped": 150,
+        "DVSS-P07:ok": 150,
+        "DVSS-P08:ok": 150,
+        "DVSS-P09:skipped": 150,
+        "DVSS-P10:skipped": 150,
+        "DVSS-P11:skipped": 150
+      },
+      "kappa": 0.804789,
+      "n": 150,
+      "notice_counts": {
+        "NOTICE-HOLD-02": 19,
+        "NOTICE-HOLD-03": 60,
+        "NOTICE-HOLD-04": 8,
+        "NOTICE-REL-01": 63
+      },
+      "over_abstention_count": 54,
+      "over_abstention_rate": 0.461538,
+      "per_tier_metrics": {
+        "tier_1": {
+          "count": 84,
+          "mean_cost_usd": 0.001253,
+          "mean_duration_ms": 25.083
+        },
+        "tier_2": {
+          "count": 28,
+          "mean_cost_usd": 0.002484,
+          "mean_duration_ms": 28.715
+        },
+        "tier_3": {
+          "count": 38,
+          "mean_cost_usd": 0.003811,
+          "mean_duration_ms": 34.156
+        }
+      },
+      "rubric_loss_mean": 0.36,
+      "total_cost_usd": 0.319634
+    },
+    "verify_and_gate_baseline": {
+      "accepted_count": 63,
+      "accepted_loss_sum": 0.0,
+      "accepted_loss_upper_95": 0.019773,
+      "arm": "verify_and_gate_baseline",
+      "coverage": 0.42,
+      "n": 150,
+      "over_abstention_rate": 0.461538,
+      "rubric_loss_mean": 0.36
+    }
+  },
+  "calibration": {
+    "alpha": 0.05,
+    "artifact_id": "cal-phase6-v1",
+    "artifact_sha256": "42b559706eee54a442b6d8314972a75de66f80f184af64541a72028928c849e5",
+    "drift_lambda": 3.3624,
+    "mu_0": 0.275692,
+    "n_cal": 100,
+    "threshold": 0.29
+  },
+  "execution_mode": "offline_deterministic_ci_stub",
+  "heldout_registry_sha256": "d4fb38bf1cb359f6b7396316148030b665f2ea6c8e71a2a54087d64b7c1b09a5",
+  "hypotheses": {
+    "H1_addressing": {
+      "conclusion": "no_directional_difference",
+      "coverage_diff": {
+        "arm_a_mean": 0.42,
+        "arm_b_mean": 0.42,
+        "ci_high": 0.0,
+        "ci_low": 0.0,
+        "mean_diff": 0.0,
+        "n_boot": 2000,
+        "n_families": 4,
+        "spans_zero": true
+      },
+      "rubric_loss_diff": {
+        "arm_a_mean": 0.36,
+        "arm_b_mean": 0.36,
+        "ci_high": 0.0,
+        "ci_low": 0.0,
+        "mean_diff": 0.0,
+        "n_boot": 2000,
+        "n_families": 4,
+        "spans_zero": true
+      }
+    },
+    "H2_roles": {
+      "conclusion": "no_directional_difference",
+      "cost_diff_usd": {
+        "arm_a_mean": 0.003409,
+        "arm_b_mean": 0.001733,
+        "ci_high": 0.001997,
+        "ci_low": 0.001424,
+        "mean_diff": 0.001676,
+        "n_boot": 2000,
+        "n_families": 4,
+        "spans_zero": false
+      },
+      "rubric_loss_diff": {
+        "arm_a_mean": 0.36,
+        "arm_b_mean": 0.36,
+        "ci_high": 0.0,
+        "ci_low": 0.0,
+        "mean_diff": 0.0,
+        "n_boot": 2000,
+        "n_families": 4,
+        "spans_zero": true
+      }
+    },
+    "H3_gate": {
+      "accepted_error_count": 0,
+      "accepted_loss_sum": 0.0,
+      "accepted_loss_upper_95": 0.019773,
+      "conclusion": "supported",
+      "coverage": 0.42,
+      "over_abstention_rate": 0.461538
+    },
+    "H4_routing": {
+      "ci_lower_95": 0.317526,
+      "confusion_matrix": {
+        "expected_tier_3_routed_tier_1": 20,
+        "expected_tier_3_routed_tier_2": 40,
+        "expected_tier_3_routed_tier_3": 40
+      },
+      "missed_item_ids": [
+        "HCHAL-001",
+        "HCHAL-002",
+        "HCHAL-005",
+        "HCHAL-006",
+        "HCHAL-007",
+        "HCHAL-010",
+        "HCHAL-011",
+        "HCHAL-012",
+        "HCHAL-015",
+        "HCHAL-016"
+      ],
+      "misses": 60,
+      "n": 100,
+      "passes_threshold": false,
+      "recall": 0.4,
+      "tier3_hits": 40
+    },
+    "M1_extractor": {
+      "binding_recall": 1.0,
+      "claim_recall": 1.0,
+      "claim_recall_ci_lower_95": 0.988801,
+      "matched_binding": 133,
+      "matched_claims": 266,
+      "n_drafts": 200,
+      "passes_threshold": true,
+      "total_expected_binding": 133,
+      "total_expected_claims": 266
+    },
+    "M2_catalog": {
+      "conclusion": "no_directional_difference",
+      "coverage_diff": {
+        "arm_a_mean": 0.42,
+        "arm_b_mean": 0.42,
+        "ci_high": 0.0,
+        "ci_low": 0.0,
+        "mean_diff": 0.0,
+        "n_boot": 2000,
+        "n_families": 4,
+        "spans_zero": true
+      },
+      "rubric_loss_diff": {
+        "arm_a_mean": 0.36,
+        "arm_b_mean": 0.36,
+        "ci_high": 0.0,
+        "ci_low": 0.0,
+        "mean_diff": 0.0,
+        "n_boot": 2000,
+        "n_families": 4,
+        "spans_zero": true
+      }
+    }
+  },
+  "policy_sha256": "ac5795382c582655346083f88168a4be4cdfd63b01963d7e9aa67fec5d887692",
+  "protocol_commit": "f09d6eb",
+  "registry_manifest_sha256": "ce207178d9278b300d50b06fae32ab48aba478c6b9893f2045092c89c2b11892",
+  "schema_version": "1.0.0",
+  "study_date": "2026-11-24"
+}
