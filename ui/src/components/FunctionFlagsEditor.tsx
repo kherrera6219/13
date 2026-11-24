@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useId, useState } from "react";
+import { type FormEvent, useId, useState } from "react";
 import type { ConsequentialFunctionItem } from "../types/dle";
 import "./components.css";
 
@@ -25,9 +25,11 @@ export function FunctionFlagsEditor({
   const nameId = useId();
   const reasonId = useId();
 
-  useEffect(() => {
+  const [prevFlags, setPrevFlags] = useState<ConsequentialFunctionItem[]>(flags);
+  if (prevFlags !== flags) {
+    setPrevFlags(flags);
     setItems(flags);
-  }, [flags]);
+  }
 
   const handleAdd = (e: FormEvent) => {
     e.preventDefault();

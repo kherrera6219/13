@@ -125,8 +125,11 @@ def _inline_mime_types(payload: Mapping[str, object]) -> list[str]:
         parts = turn.get("parts")
         if isinstance(parts, list):
             for part in parts:
-                if isinstance(part, Mapping) and isinstance(part.get("inlineData"), Mapping):
-                    mime = part["inlineData"].get("mimeType")
+                if not isinstance(part, Mapping):
+                    continue
+                inline = part.get("inlineData") or part.get("inline_data")
+                if isinstance(inline, Mapping):
+                    mime = inline.get("mimeType") or inline.get("mime_type")
                     if isinstance(mime, str):
                         mimes.append(mime)
     return mimes

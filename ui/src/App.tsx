@@ -102,7 +102,9 @@ export function App() {
   }, [baseUrl]);
 
   useEffect(() => {
-    void loadHealth();
+    queueMicrotask(() => {
+      void loadHealth();
+    });
   }, [loadHealth]);
 
   const loadOpsData = useCallback(async () => {
@@ -133,7 +135,9 @@ export function App() {
 
   useEffect(() => {
     if (activeTab === "ops" && adminKey.trim().length > 0) {
-      void loadOpsData();
+      queueMicrotask(() => {
+        void loadOpsData();
+      });
     }
   }, [activeTab, adminKey, loadOpsData]);
 
@@ -157,7 +161,9 @@ export function App() {
 
   useEffect(() => {
     if (activeTab === "sources" && apiKey.trim().length > 0) {
-      void loadSources();
+      queueMicrotask(() => {
+        void loadSources();
+      });
     }
   }, [activeTab, apiKey, loadSources]);
 
