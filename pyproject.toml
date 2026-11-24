@@ -39,7 +39,7 @@ dev = [
   "types-jsonschema>=4.23,<5",
   "openapi-spec-validator>=0.7,<1",
   "pip-audit>=2.7,<3",
-  "cyclonedx-bom>=5.1,<6",
+  "cyclonedx-bom>=5.1,<10",
 ]
 
 [tool.hatch.build.targets.wheel]
