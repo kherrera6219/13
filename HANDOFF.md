@@ -2,6 +2,19 @@
 
 Running record for agents. Newest entry first. Keep each entry short: what changed, what was learned, what is next.
 
+## 2026-11-23 — Phase 4 Wave 4A: Quad Persona Engine, Reference Catalog, Verifier Ledger, Pareto & Writer (H8, H9, H11)
+
+**State.** Phase 4 Wave 4A complete (`DVSS-K03`, `DVSS-K12`, `DVSS-P02`, `DVSS-P08`, `DVSS-P10`, `DVSS-P11`, `FR-QP-01..08`, `FR-VER-02`, `DLE-SPC-004`, `DLE-PRM-002`). Dynamic 7-field MDKF profiles (`[ROLE:8..11.<n>]`), build-time CIP/SOC/O*NET reference staging & validation, blinded/Tier-3 falsification role packets, append-only SQLite verifier ledger, Pareto frontier filtering, and `writer-1.0.0` synthesis service are built and verified.
+
+**Changed.**
+- `dle/store/repositories.py`: Added `persona_profiles` CRUD (`save_persona_profile`, `get_persona_profile`, `list_persona_profiles`, `next_persona_ordinal`) to `RegistryRepository`.
+- `dle/host/services/reference.py` & `dle/tools/fetch_reference.py`: Implemented `ReferenceCatalog`, SHA-256 verification against `config/reference/manifest.yaml`, `CIP2020`/`SOC2018`/`ONET-SOC` code validation, absent-catalog `certified_eligible=False` warning, and offline staging CLI.
+- `dle/host/services/personas.py` (`H8`) & `dle/models/fake.py`: Implemented `build_persona_profile`, `validate_persona_profile`, `DVSS-K03` (`match_profiles` `M = 0.25E + 0.45C + 0.30X` with renormalization & `low_fit`), `DVSS-P10` (`tie_break_profiles`), `DVSS-P08` (`allocate_role_tokens` largest-remainder rounding + equal-split fallback), `DVSS-P11` Tier-3 falsification + blinded wave ordering (`order_role_execution`), `execute_role_call`, and `RoleArtifact_1_0_0` citation validation; added `job="personas"` JSON generation in `FakeModel`.
+- `dle/host/services/ledger.py` (`H11`), `pareto.py` (`DVSS-P02`), `writer.py` (`H9`), `__init__.py`: Implemented verifier-only append-only `LedgerService` (`close_by_verifier`), feasibility/unit-checked `filter_pareto_options`, and `WriterService` (`writer-1.0.0` ordered by `synthesis_weight`).
+- Added 10 Draft 2020-12 contracts (`contracts/functions/{k03,p02,p08,p10,p11}.{in,out}.json`) and tests (`test_personas_and_reference.py`, `test_ledger_pareto_writer.py`).
+
+**Next.** Execute **Phase 4 Wave 4B**: wire full 12-step governed workflow (`s01`–`s12`, FROST `l01`–`l10`), `DVSS-K09` cutoff-blind retries (`<= 2`), `DVSS-P07` one-time Regulator escalation, Step-4 tool park/resume + `config/function_flags.yaml` consequential flagging, Browser UI `RunSummaryCard`/`PersonaChips`/`StepTimeline`/`PersonaDrawer`, §18 conformance fixtures, and `reports/phase4_gate.md`.
+
 ## 2026-11-22 — Phase 3 Complete (Wave 3B: Bounded PPR K07, USKD Overlay P03, Crosswalks P06, Workflow/UI Drawer & Gate Report)
 
 **State.** Phase 3 (`H3`, `O2`, `D4`, `H4`, `H6`, `H7`, `DVSS-K02`, `K06`, `K07`, `P01`, `P03`, `P06`, `FR-UI-01..02`) is complete and cleared via `reports/phase3_gate.md` (`dle-middleware:phase3`). Bounded Personalized PageRank retrieval (`alpha=0.85`, `<= 80` iters, `<= 250` vertices, hop limit `<= 4`, post-hydration edge/token budget, reserved synthetic slots) runs behind the `DLE_ENABLE_PPR` switch alongside dense hybrid retrieval, feeding 13-axis coordinate + PPR metadata into 3.8.0 signed receipts and the Browser UI `AddressGraphDrawer`.

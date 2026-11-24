@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/p10.in.json",
+  "title": "DVSS_P10_Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["candidates"],
+  "properties": {
+    "p10_enabled": { "type": "boolean" },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["profile_id", "m_score", "credential_count", "sector_lineage_match"],
+        "properties": {
+          "profile_id": { "type": "string", "minLength": 1 },
+          "m_score": { "type": "number", "minimum": 0, "maximum": 1 },
+          "credential_count": { "type": "integer", "minimum": 0 },
+          "sector_lineage_match": { "type": "number", "minimum": 0, "maximum": 1 },
+          "text_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        }
+      }
+    }
+  }
+}

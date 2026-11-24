@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/p08.in.json",
+  "title": "DVSS_P08_Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["active_roles", "total_tokens"],
+  "properties": {
+    "active_roles": {
+      "type": "array",
+      "items": { "type": "string", "enum": ["scholar", "practitioner", "regulator", "harmonizer"] },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "total_tokens": { "type": "integer", "minimum": 0 },
+    "ppr_mass_by_role": {
+      "type": ["object", "null"],
+      "additionalProperties": { "type": "number", "minimum": 0 }
+    },
+    "p08_enabled": { "type": "boolean" }
+  }
+}

@@ -11,7 +11,7 @@ import re
 import sqlite3
 import struct
 import threading
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 from dle.store.migrations import ensure_vector_table
 
@@ -1024,6 +1024,125 @@ class RegistryRepository:
                     (release_id,),
                 ).fetchall()
             return [dict(r) for r in rows]
+
+    def save_persona_profile(
+        self,
+        *,
+        profile_id: str,
+        role_axis: int,
+        version: str,
+        profile: Mapping[str, object],
+        status: str = "active",
+    ) -> None:
+        """Persist or update a generated Quad Persona profile in ``persona_profiles``."""
+        if role_axis not in (8, 9, 10, 11):
+            raise ValueError(f"invalid role_axis {role_axis}; must be 8..11")
+        if status not in ("active", "retired"):
+            raise ValueError(f"invalid persona status {status!r}; must be 'active' or 'retired'")
+        encoded = json.dumps(dict(profile), sort_keys=True, separators=(",", ":"))
+        with self._lock:
+            self._conn.execute(
+                """
+                INSERT OR REPLACE INTO persona_profiles (
+                    profile_id, role_axis, version, profile_json, status
+                ) VALUES (?, ?, ?, ?, ?)
+                """,
+                (profile_id, role_axis, version, encoded, status),
+            )
+            self._conn.commit()
+
+    def get_persona_profile(self, profile_id: str) -> dict[str, object] | None:
+        """Return persisted persona profile row and decoded ``profile`` dict or ``None``."""
+        with self._lock:
+            row = self._conn.execute(
+                """
+                SELECT profile_id, role_axis, version, profile_json, status
+                FROM persona_profiles WHERE profile_id = ?
+                """,
+                (profile_id,),
+            ).fetchone()
+            if row is None:
+                return None
+            return {
+                "profile_id": str(row["profile_id"]),
+                "role_axis": int(row["role_axis"]),
+                "version": str(row["version"]),
+                "profile": json.loads(str(row["profile_json"])),
+                "status": str(row["status"]),
+            }
+
+    def list_persona_profiles(
+        self,
+        *,
+        role_axis: int | None = None,
+        active_only: bool = True,
+    ) -> list[dict[str, object]]:
+        """List persisted persona profiles optionally filtered by role axis and active status."""
+        with self._lock:
+            if role_axis is not None and active_only:
+                rows = self._conn.execute(
+                    """
+                    SELECT profile_id, role_axis, version, profile_json, status
+                    FROM persona_profiles
+                    WHERE role_axis = ? AND status = 'active'
+                    ORDER BY role_axis, profile_id
+                    """,
+                    (role_axis,),
+                ).fetchall()
+            elif role_axis is not None:
+                rows = self._conn.execute(
+                    """
+                    SELECT profile_id, role_axis, version, profile_json, status
+                    FROM persona_profiles
+                    WHERE role_axis = ?
+                    ORDER BY role_axis, profile_id
+                    """,
+                    (role_axis,),
+                ).fetchall()
+            elif active_only:
+                rows = self._conn.execute(
+                    """
+                    SELECT profile_id, role_axis, version, profile_json, status
+                    FROM persona_profiles
+                    WHERE status = 'active'
+                    ORDER BY role_axis, profile_id
+                    """
+                ).fetchall()
+            else:
+                rows = self._conn.execute(
+                    """
+                    SELECT profile_id, role_axis, version, profile_json, status
+                    FROM persona_profiles
+                    ORDER BY role_axis, profile_id
+                    """
+                ).fetchall()
+            return [
+                {
+                    "profile_id": str(r["profile_id"]),
+                    "role_axis": int(r["role_axis"]),
+                    "version": str(r["version"]),
+                    "profile": json.loads(str(r["profile_json"])),
+                    "status": str(r["status"]),
+                }
+                for r in rows
+            ]
+
+    def next_persona_ordinal(self, role_axis: int) -> int:
+        """Return next unused ordinal ``n >= 1`` for ``[ROLE:<role_axis>.<n>]``."""
+        if role_axis not in (8, 9, 10, 11):
+            raise ValueError(f"invalid role_axis {role_axis}; must be 8..11")
+        pat = re.compile(rf"^\[ROLE:{role_axis}\.([1-9][0-9]*)\]$")
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT profile_id FROM persona_profiles WHERE role_axis = ?",
+                (role_axis,),
+            ).fetchall()
+            highest = 0
+            for r in rows:
+                m = pat.match(str(r["profile_id"]))
+                if m is not None:
+                    highest = max(highest, int(m.group(1)))
+            return highest + 1
 
 
 __all__ = [

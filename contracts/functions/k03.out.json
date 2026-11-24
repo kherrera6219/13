@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/k03.out.json",
+  "title": "DVSS_K03_Output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "role_axis",
+    "selected_profile_id",
+    "m_score",
+    "e_score",
+    "c_score",
+    "x_score",
+    "low_fit",
+    "harmonizer_low_fit_objection",
+    "tie_broken_by_p10"
+  ],
+  "properties": {
+    "role_axis": { "type": "integer", "minimum": 8, "maximum": 11 },
+    "selected_profile_id": { "type": "string", "minLength": 1 },
+    "m_score": { "type": "number", "minimum": 0, "maximum": 1 },
+    "e_score": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+    "c_score": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+    "x_score": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+    "low_fit": { "type": "boolean" },
+    "harmonizer_low_fit_objection": { "type": "boolean" },
+    "tie_broken_by_p10": { "type": "boolean" }
+  }
+}

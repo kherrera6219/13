@@ -7,7 +7,7 @@ FR-SES-01..03,"E2,H15",tests/unit/edge/test_sessions.py;tests/gemini_compat/test
 FR-TOOL-01..05,"E4,H5,H8",T-COMPAT-TOOL-01..08;T-ENG-TOOL-01..04,"1,4",planned
 FR-WF-01..07,H1,T-ENG-WF-01..14,4,planned
 FR-FL-01..07,frost/l01..l10,T-ENG-FL-01..12,2-4,planned
-FR-QP-01..08,H8,T-ENG-QP-01..16,4,planned
+FR-QP-01..08,H8,dle/host/services/personas.py;dle/host/services/reference.py;dle/tools/fetch_reference.py;tests/unit/host/services/test_personas_and_reference.py,4,implemented (Wave 4A)
 FR-TIER-01..04,"H2,tiers.yaml",T-UNIT-TIER-01..10;T-ENG-TIER-01..06,5,planned
 FR-FN-01..09,"H16,functions/",T-ENG-FN-01..12;T-EVAL-ABL-01,"2-5,7",planned
 FR-VER-01..03,"H10-H12,M3",tests/contract/prompts/test_claim_extractor.py;tests/unit/host/services/test_verifier_and_scorer.py;tests/unit/host/services/test_evidence.py,"2,4",implemented (Phase 2)
@@ -53,3 +53,4 @@ FR-RCPT-01..03;FR-API-08;IR-05,"dle/host/services/receipts.py,dle/tools/verify_r
 FR-WF-01;FR-API-04..08;FR-VER-01..03;FR-REL-01..04;FR-RCPT-01..03;GC-12;GC-13;GC-25,"dle/host/workflow/governed.py,dle/edge/gateway.py,dle/edge/composer.py,ui/src/components/",tests/unit/edge/test_gateway.py;tests/gemini_compat/test_python_sdk.py;tests/gemini_compat/js_sdk_compat.mjs;ui/src/stories.test.tsx,2,implemented
 DLE-REG-001..005;DLE-SPC-003..005;DVSS-K02;DVSS-K06;DVSS-P01;O2,"dle/store/repositories.py,dle/host/services/registry.py,dle/host/services/coordinate.py,dle/tools/registry_release.py,offline/registry_release.py,config/pilots/warehouse_substitution/",tests/unit/host/services/test_registry_and_coordinate.py,3,implemented (Wave 3A)
 DVSS-K07;DVSS-P03;DVSS-P06;FR-UI-01..02;D4,"dle/host/services/overlay.py,dle/host/services/graph.py,dle/host/workflow/governed.py,dle/edge/settings.py,dle/edge/gateway.py,ui/src/components/AddressGraphDrawer.tsx",tests/unit/host/services/test_graph_and_overlay.py;tests/unit/edge/test_gateway.py;ui/src/stories.test.tsx;reports/phase3_gate.md,3,implemented (Wave 3B)
+DVSS-K03;DVSS-K12;DVSS-P02;DVSS-P08;DVSS-P10;DVSS-P11;DLE-SPC-004;DLE-PRM-002,"dle/store/repositories.py,dle/host/services/reference.py,dle/tools/fetch_reference.py,dle/host/services/personas.py,dle/host/services/ledger.py,dle/host/services/pareto.py,dle/host/services/writer.py,contracts/functions/",tests/unit/host/services/test_personas_and_reference.py;tests/unit/host/services/test_ledger_pareto_writer.py,4,implemented (Wave 4A)

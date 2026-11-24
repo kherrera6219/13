@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/p11.in.json",
+  "title": "DVSS_P11_Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["role_axis", "tier"],
+  "properties": {
+    "role_axis": { "type": "integer", "minimum": 8, "maximum": 11 },
+    "tier": { "type": "integer", "enum": [1, 2, 3] },
+    "p11_enabled": { "type": "boolean" }
+  }
+}

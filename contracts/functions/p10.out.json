@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/p10.out.json",
+  "title": "DVSS_P10_Output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["ordered_profile_ids", "p10_enabled"],
+  "properties": {
+    "p10_enabled": { "type": "boolean" },
+    "ordered_profile_ids": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

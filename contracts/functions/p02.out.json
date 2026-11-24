@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/p02.out.json",
+  "title": "DVSS_P02_Output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["applied", "retained_ids", "dominated_ids", "infeasible_ids", "unit_conflicts"],
+  "properties": {
+    "applied": { "type": "boolean" },
+    "retained_ids": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "dominated_ids": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "infeasible_ids": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "unit_conflicts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["objective", "expected_unit", "option_id", "actual_unit"],
+        "properties": {
+          "objective": { "type": "string", "minLength": 1 },
+          "expected_unit": { "type": "string", "minLength": 1 },
+          "option_id": { "type": "string", "minLength": 1 },
+          "actual_unit": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/p02.in.json",
+  "title": "DVSS_P02_Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["options", "objectives"],
+  "properties": {
+    "options": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["option_id", "label", "feasible", "metrics", "units"],
+        "properties": {
+          "option_id": { "type": "string", "minLength": 1 },
+          "label": { "type": "string", "minLength": 1 },
+          "feasible": { "type": "boolean" },
+          "metrics": {
+            "type": "object",
+            "additionalProperties": { "type": "number" }
+          },
+          "units": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          },
+          "infeasibility_reason": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "objectives": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "direction", "unit"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "direction": { "type": "string", "enum": ["min", "max"] },
+          "unit": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

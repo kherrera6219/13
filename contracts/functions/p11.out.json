@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/p11.out.json",
+  "title": "DVSS_P11_Output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["falsification_enabled", "requires_disconfirming_slot"],
+  "properties": {
+    "falsification_enabled": { "type": "boolean" },
+    "requires_disconfirming_slot": { "type": "boolean" }
+  }
+}

@@ -11,6 +11,7 @@ import copy
 import hashlib
 import json
 import math
+import re
 from collections import deque
 from collections.abc import AsyncIterator, Callable, Mapping
 from dataclasses import dataclass
@@ -82,6 +83,54 @@ def _extract_prompt_summary(payload: Mapping[str, object]) -> str:
     return "ok"
 
 
+def _build_fake_role_artifact(payload: Mapping[str, object]) -> str:
+    user_text = _extract_prompt_summary(payload)
+    sys_text = ""
+    sys_inst = payload.get("systemInstruction")
+    if isinstance(sys_inst, Mapping) and isinstance(sys_inst.get("parts"), list):
+        sys_text = " ".join(
+            str(p.get("text"))
+            for p in sys_inst["parts"]
+            if isinstance(p, Mapping) and isinstance(p.get("text"), str)
+        )
+
+    prof_match = re.search(r'"profile_id"\s*:\s*"(\[ROLE:(8|9|10|11)\.[0-9]+\])"', user_text)
+    profile_id = prof_match.group(1) if prof_match else "[ROLE:8.1]"
+    role_axis = int(prof_match.group(2)) if prof_match else 8
+    prop_match = re.search(r"Proposal:\s*(\S+)", user_text)
+    proposal_id = prop_match.group(1) if prop_match else "p0"
+    pids = list(dict.fromkeys(re.findall(r'<passage\s+id="([^"]+)">', user_text)))
+    falsify = (
+        "falsifier" in sys_text.lower() or "what evidence would make it wrong" in sys_text.lower()
+    )
+
+    claims: list[dict[str, object]] = []
+    if pids:
+        claim: dict[str, object] = {
+            "claim_id": f"c-role-{role_axis}-1",
+            "assertion": f"Evidence in packet supports scoped role-{role_axis} assessment.",
+            "binding": role_axis in (10, 11),
+            "scope": "general",
+            "passage_ids": pids[:2],
+        }
+        if falsify:
+            claim["falsifier"] = "Disconfirming measurement or superseded clause revision."
+        claims.append(claim)
+
+    artifact = {
+        "profile_id": profile_id,
+        "role_axis": role_axis,
+        "proposal_id": proposal_id,
+        "claims": claims,
+        "assumptions": ["Scope matches packet metadata."],
+        "disconfirming_observations": (
+            ["Check whether newer signed revision supersedes packet clause."] if falsify else []
+        ),
+        "objections": [],
+    }
+    return json.dumps(artifact)
+
+
 def _count_text_tokens(payload: Mapping[str, object]) -> int:
     total_words = 0
     for key in ("contents", "generateContentRequest"):
@@ -147,7 +196,9 @@ class FakeModel:
         prompt_summary = _extract_prompt_summary(payload)
         gen_cfg = payload.get("generationConfig")
         response_text: str
-        if isinstance(gen_cfg, Mapping) and gen_cfg.get("responseMimeType") == "application/json":
+        if job == "personas":
+            response_text = _build_fake_role_artifact(payload)
+        elif isinstance(gen_cfg, Mapping) and gen_cfg.get("responseMimeType") == "application/json":
             response_text = json.dumps({"echo": prompt_summary, "job": job})
         elif job == "writer":
             response_text = prompt_summary
