@@ -101,7 +101,7 @@ jobs:
       - name: Check UI scaffold
         if: hashFiles('ui/package.json') == ''
         run: echo "Skipping UI checks until P1-18"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         if: hashFiles('ui/package.json') != ''
         with: { node-version: 22 }
       - name: Install, lint, and test UI
