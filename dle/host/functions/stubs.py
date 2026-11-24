@@ -314,6 +314,12 @@ def _p08_fallback_equal_split(ctx: FunctionContext) -> FunctionResult:
     return FunctionResult("ok", {"allocation": allocation, "strategy": "equal_split"})
 
 
+def _p09_cross_domain_analogy(ctx: FunctionContext) -> FunctionResult:
+    raw_hyps = ctx.payload.get("hypotheses", [])
+    hyps = list(raw_hyps) if isinstance(raw_hyps, list) else []
+    return FunctionResult("ok", {"hypotheses": hyps})
+
+
 def _p12_fallback_drift(ctx: FunctionContext) -> FunctionResult:
     return FunctionResult("ok", {"drift_latched": bool(ctx.payload.get("drift_latched", False))})
 
@@ -333,6 +339,7 @@ def register_phase1_functions(registry: FunctionRegistry, notices: NoticesConfig
     registry.register("DVSS-K11", _make_k11_disclosure(notices))
     registry.register("DVSS-K12", _k12_ledger_merge)
 
+    registry.register("DVSS-P09", _p09_cross_domain_analogy)
     registry.register_fallback("DVSS-P07", _p07_fallback_escalation)
     registry.register_fallback("DVSS-P08", _p08_fallback_equal_split)
     registry.register_fallback("DVSS-P12", _p12_fallback_drift)

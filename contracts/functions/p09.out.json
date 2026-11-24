@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/p09.out.json",
+  "title": "DVSS_P09_Output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["hypotheses"],
+  "properties": {
+    "hypotheses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "hypothesis_id",
+          "source_atom",
+          "target_atom",
+          "relation",
+          "label",
+          "is_hypothesis",
+          "citable_as_evidence"
+        ],
+        "properties": {
+          "hypothesis_id": {
+            "type": "string",
+            "pattern": "^\\[TMP:ANALOGY:[^\\]]+\\]$"
+          },
+          "source_atom": { "type": "string", "minLength": 1 },
+          "target_atom": { "type": "string", "minLength": 1 },
+          "relation": { "type": "string", "minLength": 1 },
+          "label": { "type": "string", "minLength": 1 },
+          "is_hypothesis": { "const": true },
+          "citable_as_evidence": { "const": false }
+        }
+      }
+    }
+  }
+}

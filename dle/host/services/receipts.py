@@ -36,6 +36,11 @@ from cryptography.hazmat.primitives.serialization import (
 
 from dle.config.loader import canonicalize_jcs
 from dle.errors import ContractValidationError, DleError
+from dle.host.services.anchoring import (
+    VERIFICATION_LEVEL_BY_PROFILE,
+    AnchorProvider,
+    LocalWormMerkleAnchor,
+)
 from dle.store.repositories import ReceiptRepository
 
 _DEFAULT_RECEIPT_SCHEMA = Path(__file__).resolve().parents[3] / "contracts" / "receipt.schema.json"
@@ -195,10 +200,14 @@ class ReceiptSealer:
         key_manager: Ed25519KeyManager,
         *,
         receipt_schema_path: Path | None = None,
+        anchor_provider: AnchorProvider | None = None,
     ) -> None:
-        """Initialize sealer with ``ReceiptRepository``, key manager, and receipt JSON schema."""
+        """Initialize sealer with ``ReceiptRepository``, key manager, and anchor provider."""
         self._repo = repo
         self._keys = key_manager
+        self._anchor_provider: AnchorProvider = (
+            anchor_provider if anchor_provider is not None else LocalWormMerkleAnchor()
+        )
         schema_target = receipt_schema_path or _DEFAULT_RECEIPT_SCHEMA
         schema = json.loads(schema_target.read_text(encoding="utf-8"))
         self._validator = jsonschema.Draft202012Validator(
@@ -244,15 +253,15 @@ class ReceiptSealer:
             first_receipt = str(existing[0]["receipt_id"]) if existing else str(body["run_id"])
             last_receipt = str(body["run_id"])
             sealed_utc = str(body["utc"])
-            log_id = f"local-worm-merkle:{chain_id}"
+            ckpt_id = len(self._repo.list_merkle_checkpoints()) + 1
 
             provisional_envelope: dict[str, object] = {
                 "digest_sha256": digest_sha256,
                 "key_id": key_id,
                 "algorithm": "Ed25519",
                 "signature_b64": signature_b64,
-                "log_id": log_id,
-                "inclusion_proof_ref": f"checkpoint:next#seq:{chain_seq}",
+                "log_id": f"local-worm-merkle:{chain_id}",
+                "inclusion_proof_ref": f"checkpoint:{ckpt_id}#seq:{chain_seq}",
                 "verified_checkpoint_sha256": merkle_root,
                 "anchoring_profile": "local_worm_merkle",
                 "verification_level": "locally_sealed",
@@ -267,12 +276,38 @@ class ReceiptSealer:
                     pointer="/payload/function_invocations",
                 )
 
-            ckpt_id = len(self._repo.list_merkle_checkpoints()) + 1
-            envelope = {
-                **provisional_envelope,
-                "inclusion_proof_ref": f"checkpoint:{ckpt_id}#seq:{chain_seq}",
+            anchor_res = self._anchor_provider.anchor_checkpoint(
+                chain_id=chain_id,
+                chain_seq=chain_seq,
+                checkpoint_id=ckpt_id,
+                receipt_id=str(body["run_id"]),
+                digest_sha256=digest_sha256,
+                merkle_root=merkle_root,
+                sealed_utc=sealed_utc,
+            )
+            envelope: dict[str, object] = {
+                "digest_sha256": digest_sha256,
+                "key_id": key_id,
+                "algorithm": "Ed25519",
+                "signature_b64": signature_b64,
+                "log_id": anchor_res.log_id,
+                "inclusion_proof_ref": anchor_res.inclusion_proof_ref,
+                "verified_checkpoint_sha256": anchor_res.verified_checkpoint_sha256,
+                "anchoring_profile": anchor_res.anchoring_profile,
+                "verification_level": anchor_res.verification_level,
             }
+            sealed: dict[str, object] = {"payload": body, "envelope": envelope}
+            self._validate_receipt(sealed)
 
+            encoded_anchor_ref = json.dumps(
+                {
+                    "log_id": anchor_res.log_id,
+                    "inclusion_proof_ref": anchor_res.inclusion_proof_ref,
+                    "verification_level": anchor_res.verification_level,
+                    "anchor_ref": anchor_res.anchor_ref,
+                },
+                sort_keys=True,
+            )
             self._repo.insert_receipt(
                 receipt_id=str(body["run_id"]),
                 chain_id=chain_id,
@@ -285,19 +320,17 @@ class ReceiptSealer:
                 key_id=key_id,
                 receipt_jcs=jcs_bytes.decode("utf-8"),
                 signature_b64=signature_b64,
-                anchoring_profile="local_worm_merkle",
+                anchoring_profile=anchor_res.anchoring_profile,
                 sealed_utc=sealed_utc,
                 function_records=[dict(r) for r in fn_records if isinstance(r, Mapping)],
             )
             self._repo.insert_merkle_checkpoint(
-                root_sha256=merkle_root,
+                root_sha256=anchor_res.verified_checkpoint_sha256,
                 first_receipt=first_receipt,
                 last_receipt=last_receipt,
                 anchored_utc=sealed_utc,
-                anchor_ref=f"{log_id}:seq:{chain_seq}",
+                anchor_ref=encoded_anchor_ref,
             )
-            sealed: dict[str, object] = {"payload": body, "envelope": envelope}
-            self._validate_receipt(sealed)
             return sealed
 
     def get_receipt(self, receipt_id: str) -> dict[str, object] | None:
@@ -318,6 +351,24 @@ class ReceiptSealer:
         )
         root_sha = str(ckpt["root_sha256"]) if ckpt is not None else str(row["receipt_sha256"])
         ckpt_id = int(str(ckpt["checkpoint_id"])) if ckpt is not None else 1
+        anchoring_profile = str(row["anchoring_profile"])
+        default_level = {str(k): str(v) for k, v in VERIFICATION_LEVEL_BY_PROFILE.items()}.get(
+            anchoring_profile, "locally_sealed"
+        )
+        log_id = f"local-worm-merkle:{chain_id}"
+        proof_ref = f"checkpoint:{ckpt_id}#seq:{chain_seq}"
+        verification_level = default_level
+        if ckpt is not None and isinstance(ckpt.get("anchor_ref"), str):
+            raw_ref = str(ckpt["anchor_ref"])
+            if raw_ref.startswith("{"):
+                try:
+                    meta = json.loads(raw_ref)
+                    if isinstance(meta, Mapping):
+                        log_id = str(meta.get("log_id", log_id))
+                        proof_ref = str(meta.get("inclusion_proof_ref", proof_ref))
+                        verification_level = str(meta.get("verification_level", verification_level))
+                except json.JSONDecodeError:
+                    pass
         return {
             "payload": json.loads(str(row["receipt_jcs"])),
             "envelope": {
@@ -325,11 +376,11 @@ class ReceiptSealer:
                 "key_id": str(row["key_id"]),
                 "algorithm": "Ed25519",
                 "signature_b64": str(row["signature_b64"]),
-                "log_id": f"local-worm-merkle:{chain_id}",
-                "inclusion_proof_ref": f"checkpoint:{ckpt_id}#seq:{chain_seq}",
+                "log_id": log_id,
+                "inclusion_proof_ref": proof_ref,
                 "verified_checkpoint_sha256": root_sha,
-                "anchoring_profile": str(row["anchoring_profile"]),
-                "verification_level": "locally_sealed",
+                "anchoring_profile": anchoring_profile,
+                "verification_level": verification_level,
             },
         }
 

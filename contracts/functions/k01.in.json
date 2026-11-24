@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/k01.in.json",
+  "title": "DVSS_K01_Input",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "model": { "type": "string", "minLength": 1 },
+    "turn_count": { "type": "integer", "minimum": 0 },
+    "schema_id": { "type": "string", "minLength": 1 },
+    "payload": { "type": "object" }
+  }
+}

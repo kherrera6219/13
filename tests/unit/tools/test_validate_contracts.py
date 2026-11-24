@@ -82,6 +82,7 @@ def test_invalid_functions_yaml_and_unpaired_io_fail(tmp_path, capsys):
             fn["can_hold"] = True
     fn_path.write_text(yaml.safe_dump(fn_doc), encoding="utf-8")
 
+    (root / "contracts" / "functions" / "k01.out.json").unlink(missing_ok=True)
     orphan = root / "contracts" / "functions" / "k01.in.json"
     orphan.write_text('{"type": "object"}\n', encoding="utf-8")
 

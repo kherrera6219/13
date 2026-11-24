@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/p09.in.json",
+  "title": "DVSS_P09_Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["query_anchors", "max_analogies"],
+  "properties": {
+    "query_anchors": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "max_analogies": { "type": "integer", "minimum": 0, "maximum": 10 },
+    "domain_hint": { "type": ["string", "null"] }
+  }
+}

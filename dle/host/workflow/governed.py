@@ -24,6 +24,7 @@ from dle.edge.translator import RunRequest
 from dle.errors import ModelUnavailable
 from dle.host.frost import FrostTrace
 from dle.host.functions import FunctionContext, FunctionRecord, FunctionRegistry
+from dle.host.services.analogy import generate_cross_domain_analogies
 from dle.host.services.claim_extractor import ClaimExtractor
 from dle.host.services.coordinate import (
     CoordinateParseResult,
@@ -573,9 +574,37 @@ async def _execute_deliberation_round(
     profile_cfg = config.profiles.get(profile_name)
     toggles = profile_cfg.policy_functions if profile_cfg is not None else {}
     p08_on = toggles.get("DVSS-P08", "on") != "off"
+    p09_on = toggles.get("DVSS-P09", "off") == "on"
     p10_on = toggles.get("DVSS-P10", "on") != "off"
     p11_toggle = toggles.get("DVSS-P11", "tier3")
     p11_on = p11_toggle == "on" or (p11_toggle == "tier3" and tier >= 3)
+
+    if p09_on:
+        analogy_anchors = (
+            _canonical_atoms(coord_res, "axis_1_pillars")
+            + _canonical_atoms(coord_res, "axis_2_sectors")
+            + _canonical_atoms(coord_res, "axis_3_honeycomb")
+        )
+        analogy_hyps = generate_cross_domain_analogies(
+            query_anchors=analogy_anchors,
+            snapshot=snapshot,
+            max_analogies=3,
+        )
+        p09_payload: dict[str, object] = {"hypotheses": [h.to_dict() for h in analogy_hyps]}
+    else:
+        p09_payload = {"hypotheses": []}
+
+    function_registry.invoke(
+        "DVSS-P09",
+        FunctionContext(
+            run_id=run_id,
+            attempt_id=attempt_id,
+            profile=profile_name,
+            tier=tier,
+            payload=p09_payload,
+        ),
+        records=records,
+    )
 
     mass_map = compute_role_ppr_mass(ppr_res, _role_input_atoms_map(coord_res))
     budget_res = allocate_role_tokens(

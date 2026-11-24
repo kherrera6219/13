@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/p05.out.json",
+  "title": "DVSS_P05_Output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "staging_id",
+    "staging_sha256",
+    "staged_count",
+    "rejected_count",
+    "rejected_reasons",
+    "live_registry_modified",
+    "status"
+  ],
+  "properties": {
+    "staging_id": { "type": "string", "minLength": 1 },
+    "staging_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "staged_count": { "type": "integer", "minimum": 0 },
+    "rejected_count": { "type": "integer", "minimum": 0 },
+    "rejected_reasons": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "live_registry_modified": { "const": false },
+    "status": {
+      "type": "string",
+      "enum": ["staged_for_review", "empty"]
+    }
+  }
+}

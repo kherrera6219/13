@@ -168,7 +168,14 @@ class ContaminationError(CalibrationError):
     default_code: ClassVar[str] = "DLE-E1502"
 
 
+class AnchorPendingError(DleError):
+    """Transparency-log anchoring could not confirm inclusion yet (`DLE-E1405`, §16c/§16d)."""
+
+    default_code: ClassVar[str] = "DLE-E1405"
+
+
 __all__ = [
+    "AnchorPendingError",
     "AuthError",
     "CalibrationError",
     "ConfigError",

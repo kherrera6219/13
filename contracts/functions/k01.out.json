@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/k01.out.json",
+  "title": "DVSS_K01_Output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["valid", "errors"],
+  "properties": {
+    "valid": { "type": "boolean" },
+    "errors": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

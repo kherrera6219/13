@@ -2,6 +2,19 @@
 
 Running record for agents. Newest entry first. Keep each entry short: what changed, what was learned, what is next.
 
+## 2026-11-23 — Phase 7 Wave 7A: DVSS-P05, DVSS-P09, 52/52 Contracts & Pluggable Anchoring
+
+**State.** Phase 7 Wave 7A (`DVSS-P05`, `DVSS-P09`, `DVSS-K01` paired contract completion -> 26/26 DVSS bindings / 52 schemas, and pluggable `AnchorProvider` receipt anchoring across `local_worm_merkle`, `customer_hosted_log`, and `external_transparency_log`) is complete and verified.
+
+**Changed.**
+- `contracts/functions/`: Added `k01.{in,out}.json`, `p05.{in,out}.json`, and `p09.{in,out}.json`, bringing the catalog to all 26 bound DVSS functions (52 JSON schemas). Updated temp-copy orphan fixture in `tests/unit/tools/test_validate_contracts.py`.
+- `dle/host/services/promotion.py` (`O2`, `DVSS-P05`): Implemented offline quarantined TMP node staging (`stage_quarantined_nodes`) with JCS digest verification and hard refusal against writing to live `config/registry`.
+- `dle/host/services/analogy.py`, `dle/host/functions/stubs.py`, `dle/host/workflow/governed.py` (`H8`, `DVSS-P09`): Implemented non-citable `[TMP:ANALOGY:...]` cross-domain analogy hypotheses executed under `advisory` profile and cleanly skipped under `strict`/`kernel_only`.
+- `dle/host/services/anchoring.py`, `dle/host/services/receipts.py`, `dle/errors.py`: Added `AnchorPendingError` (`DLE-E1405`), `LocalWormMerkleAnchor`, `CustomerHostedLogAnchor`, and `ExternalTransparencyLogAnchor`, reconstructing profile/verification levels cleanly in `get_receipt` and `export_bundle`.
+- `tests/unit/host/services/test_phase7_policy_and_anchoring.py`: Added `T-UNIT-FN-P05`, `T-UNIT-FN-P09`, `T-UNIT-ANCHOR`, and `T-CONTRACT-26FN-01`; verified `232 passed, 2 skipped` (`90.48%` cov), `mypy --strict` `70` files, `ruff`, `validate_contracts`, `check_egress_imports`, and Semgrep `0` findings (`145` files).
+
+**Next.** Execute **Phase 7 Wave 7B (Final Evaluation Study & Release Hardening)**: implement `offline/evaluate.py` (`O3`) executing frozen `study_protocol.md` (`H1`–`H4`, `M1`–`M2`, verify-and-gate baseline) against the 250 sealed held-out hashes + 200-draft extractor set, publish `reports/evaluation_study_report.md`, `reports/system_card.md`, CycloneDX `reports/sbom.cdx.json`, `reports/egress_attestation.md`, complete `DLE-CMR §10`, and build/verify final release Docker image `dle-middleware:release` (`reports/phase7_gate.md`).
+
 ## 2026-11-23 — Phase 6 Complete (Calibration Pilot, CRC/CUSUM O1/DVSS-P14 & Strict Drift Recovery)
 
 **State.** Phase 6 (`O1`, `H14`, `DVSS-P14`, `FR-REL-01..04`, `DLE-EVL-001`, `DLE-EVL-002`) is complete and cleared via `reports/phase6_gate.md` (`dle-middleware:phase6`).
