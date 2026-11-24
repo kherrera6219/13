@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/p14.in.json",
+  "title": "DVSS_P14_Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "pilot_dataset_sha256",
+    "heldout_hashes_sha256",
+    "alpha",
+    "grid_step",
+    "drift_delta",
+    "target_arl",
+    "min_kappa",
+    "seed"
+  ],
+  "properties": {
+    "pilot_dataset_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "heldout_hashes_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "alpha": { "type": "number", "exclusiveMinimum": 0, "exclusiveMaximum": 1 },
+    "grid_step": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+    "drift_delta": { "type": "number", "exclusiveMinimum": 0, "exclusiveMaximum": 1 },
+    "target_arl": { "type": "integer", "minimum": 100 },
+    "min_kappa": { "type": "number", "minimum": 0, "maximum": 1 },
+    "seed": { "type": "integer", "minimum": 0 }
+  }
+}

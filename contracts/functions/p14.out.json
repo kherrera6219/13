@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/p14.out.json",
+  "title": "DVSS_P14_Output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "artifact_id",
+    "artifact_sha256",
+    "status",
+    "n_cal",
+    "alpha",
+    "threshold",
+    "mu_0",
+    "drift_delta",
+    "drift_lambda",
+    "cohen_kappa",
+    "empirical_coverage",
+    "corrected_risk",
+    "recommended_decay_rates"
+  ],
+  "properties": {
+    "artifact_id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{1,63}$" },
+    "artifact_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "status": { "type": "string", "enum": ["staged", "approved", "revoked"] },
+    "n_cal": { "type": "integer", "minimum": 1 },
+    "alpha": { "type": "number", "exclusiveMinimum": 0, "exclusiveMaximum": 1 },
+    "threshold": { "type": "number", "minimum": 0, "maximum": 1 },
+    "mu_0": { "type": "number", "minimum": 0, "maximum": 1 },
+    "drift_delta": { "type": "number", "exclusiveMinimum": 0, "exclusiveMaximum": 1 },
+    "drift_lambda": { "type": "number", "exclusiveMinimum": 0 },
+    "cohen_kappa": { "type": "number", "minimum": -1, "maximum": 1 },
+    "empirical_coverage": { "type": "number", "minimum": 0, "maximum": 1 },
+    "corrected_risk": { "type": "number", "minimum": 0, "maximum": 1 },
+    "recommended_decay_rates": {
+      "type": "object",
+      "additionalProperties": { "type": "number", "minimum": 0 }
+    }
+  }
+}

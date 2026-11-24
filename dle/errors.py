@@ -156,9 +156,23 @@ class UpstreamApiError(DleError):
         )
 
 
+class CalibrationError(DleError):
+    """Invalid, tampered, unapproved, or low-kappa calibration artifact (`DLE-E1501`)."""
+
+    default_code: ClassVar[str] = "DLE-E1501"
+
+
+class ContaminationError(CalibrationError):
+    """Dataset overlaps with sealed held-out query hashes (`DLE-E1502`, DLE-EVL-001)."""
+
+    default_code: ClassVar[str] = "DLE-E1502"
+
+
 __all__ = [
     "AuthError",
+    "CalibrationError",
     "ConfigError",
+    "ContaminationError",
     "ContractValidationError",
     "DleError",
     "EgressDenied",

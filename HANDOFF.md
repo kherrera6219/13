@@ -2,6 +2,19 @@
 
 Running record for agents. Newest entry first. Keep each entry short: what changed, what was learned, what is next.
 
+## 2026-11-23 — Phase 6 Complete (Calibration Pilot, CRC/CUSUM O1/DVSS-P14 & Strict Drift Recovery)
+
+**State.** Phase 6 (`O1`, `H14`, `DVSS-P14`, `FR-REL-01..04`, `DLE-EVL-001`, `DLE-EVL-002`) is complete and cleared via `reports/phase6_gate.md` (`dle-middleware:phase6`).
+
+**Changed.**
+- `contracts/` & `dle/errors.py`: Added `CalibrationError` (`DLE-E1501`), `ContaminationError` (`DLE-E1502`), `contracts/calibration.schema.json`, paired `contracts/functions/p14.{in,out}.json`, and `/healthz` calibration metadata fields in `contracts/openapi.yaml`.
+- `dle/host/services/calibration.py`, `dle/tools/calibrate.py`, `offline/calibrate.py`: Implemented `O1` / `DVSS-P14` finite-sample §16b Conformal Risk Control cutoff selection (`threshold = 0.29` at `alpha = 0.05`, `corrected_risk = 0.009901`), three-level Cohen's kappa check (`0.878247 >= 0.6`), §16c stationary-block-bootstrap CUSUM ARL calibration (`mu_0 = 0.275692`, `delta = 0.02`, `lambda = 3.3624`, `estimated_in_control_arl = 1000.92`), RFC 8785 JCS artifact digest signing/verification, and `ContaminationError` guard against `offline/registry/heldout_hashes.json`.
+- `offline/registry/heldout_hashes.json`, `offline/pilot/pilot_graded_100.jsonl`, `config/calibration/cal-phase6-v1.json`: Sealed 250 held-out query hashes (150 test + 100 challenge, hashes only), executed 100 domain-stratified governed pilot trajectories (40/35/25 tiers, blind dual grading), and emitted approved strict artifact `cal-phase6-v1`.
+- `dle/host/services/release.py`, `dle/models/registry.py`, `dle/edge/settings.py`, `dle/edge/gateway.py`, `dle/host/workflow/governed.py`: Wired fail-closed startup calibration verification, `status != "approved"` gate block, preserved CUSUM `latch_reason`, and approved-artifact validation & `modelVersion` reload on `POST /admin/drift/reset`.
+- `tests/unit/offline/test_calibration_and_drift.py`, `tests/unit/edge/test_gateway.py`, `tests/gemini_compat/{test_python_sdk.py,js_sdk_compat.mjs}`: Verified CRC/kappa/CUSUM/contamination/tamper/fail-closed behavior, end-to-end strict drift trip -> `NOTICE-HOLD-05` -> recalibrate -> reset -> ZIP `verify_bundle_zip`, `227 passed, 2 skipped` (`90.44%` cov), `26/26` Python SDK, `24/24` JS SDK, `pip-audit` 0 CVEs, Semgrep `0` findings (`139` files), and `dle-middleware:phase6` Docker E2E (`LIVE_E2E_PHASE6_OK`, `VERIFIED: /tmp/p6_bundle.zip`).
+
+**Next.** Execute **Phase 7 (Pre-Registered Evaluation Study & Release Hardening)**: implement deferred `DVSS-P05` / `DVSS-P09` + paired contracts, pluggable external transparency-log anchor interface, `offline/evaluate.py` (`O3`) running frozen `study_protocol.md` (`H1`–`H4`, `M1`–`M2`) on the 250 sealed held-out items, populate `reports/evaluation_study_report.md`, `reports/system_card.md`, CycloneDX `reports/sbom.cdx.json`, `reports/egress_attestation.md`, complete `DLE-CMR §10`, and verify final release image `dle-middleware:release` (`reports/phase7_gate.md`).
+
 ## 2026-11-23 — Phase 5 Complete (Wave 5B Exit Gate: Admin/Audit UI, Full Storybook/axe Catalog, NFR-PERF-01 & Gate Report)
 
 **State.** Phase 5 (`H2`, `DVSS-K10`, `FR-TIER-01..04`, `NFR-COST-01`, `NFR-PERF-01`, `NFR-ACC-01`, `US-03..17`) is complete and cleared via `reports/phase5_gate.md` (`dle-middleware:phase5`).

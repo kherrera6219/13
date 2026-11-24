@@ -44,6 +44,11 @@ class CalibrationArtifact:
     mu_0: float
     drift_lambda: float
     drift_delta: float = 0.02
+    status: Literal["staged", "approved", "revoked"] = "approved"
+    policy_sha256: str | None = None
+    model_versions: tuple[tuple[str, str], ...] = ()
+    cohen_kappa: float | None = None
+    heldout_hashes_sha256: str | None = None
 
 
 @dataclass(frozen=True)
@@ -163,6 +168,7 @@ def update_cusum_drift(
     u_t: float,
     calibration: CalibrationArtifact,
     previous_latched: bool = False,
+    previous_latch_reason: str | None = None,
     version_changed_reason: str | None = None,
     ops_repo: OpsRepository | None = None,
 ) -> tuple[float, bool, str | None]:
@@ -172,7 +178,7 @@ def update_cusum_drift(
         float(previous_c_t) + float(u_t) - calibration.mu_0 - calibration.drift_delta,
     )
     latched = bool(previous_latched)
-    reason: str | None = None
+    reason: str | None = previous_latch_reason if latched else None
     if version_changed_reason:
         latched = True
         reason = version_changed_reason
@@ -214,6 +220,17 @@ def evaluate_release_gate(
             cusum=cusum,
             decision="block",
             block_reason="missing_calibration_artifact",
+            open_blocking_ids=tuple(o.objection_id for o in open_blocking_objections),
+        )
+    if calibration.status != "approved":
+        return GateDecision(
+            hard_gate=False,
+            u=score.u,
+            cutoff=0.0,
+            drift_latched=True,
+            cusum=cusum,
+            decision="block",
+            block_reason="unapproved_calibration_artifact",
             open_blocking_ids=tuple(o.objection_id for o in open_blocking_objections),
         )
 

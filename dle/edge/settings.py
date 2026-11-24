@@ -73,6 +73,7 @@ class GatewaySettings:
     nli_model_path: Path | None = None
     nli_sha256: str | None = None
     registry_overlay_dir: Path | None = None
+    calibration_path: Path | None = None
     enable_ppr: bool = True
     keepalive_interval_s: float = 8.0
     cors_origins: tuple[str, ...] = (
@@ -143,6 +144,15 @@ class GatewaySettings:
             registry_overlay_dir = default_pilot_overlay
         else:
             registry_overlay_dir = None
+        raw_calibration = os.getenv("DLE_CALIBRATION_PATH")
+        default_cal_path = config_dir / "calibration" / "cal-phase6-v1.json"
+        calibration_path: Path | None
+        if raw_calibration:
+            calibration_path = Path(raw_calibration)
+        elif default_cal_path.is_file():
+            calibration_path = default_cal_path
+        else:
+            calibration_path = None
         enable_ppr = _parse_bool_env(os.getenv("DLE_ENABLE_PPR"), default=True)
 
         raw_cors = os.getenv("DLE_CORS_ORIGINS")
@@ -184,6 +194,7 @@ class GatewaySettings:
             nli_model_path=nli_model_path,
             nli_sha256=nli_sha256,
             registry_overlay_dir=registry_overlay_dir,
+            calibration_path=calibration_path,
             enable_ppr=enable_ppr,
             keepalive_interval_s=keepalive_interval_s,
             cors_origins=cors_origins,

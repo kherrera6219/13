@@ -349,7 +349,7 @@ async function runSuite() {
         "Content-Type": "application/json",
         "X-DLE-Admin-Key": adminKey,
       },
-      body: JSON.stringify({ calibrationArtifactId: "cal-phase2-dev-001", confirm: "RESET" }),
+      body: JSON.stringify({ calibrationArtifactId: "cal-phase6-v1", confirm: "RESET" }),
     });
     assert.equal(resetResp.status, 204);
 

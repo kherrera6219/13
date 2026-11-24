@@ -35,6 +35,7 @@ from dle.edge.tools import ToolBridge, extract_function_calls, extract_model_con
 from dle.edge.translator import normalize_model_id, translate_generate_request
 from dle.errors import (
     AuthError,
+    CalibrationError,
     ContractValidationError,
     DleError,
     EgressDenied,
@@ -53,6 +54,8 @@ from dle.host.services import (
     ReceiptSealer,
     ReferenceCatalog,
     RegistrySnapshot,
+    find_approved_calibration_artifact,
+    load_calibration_artifact,
     load_failure_centroids,
     load_reference_catalog,
     load_registry,
@@ -268,22 +271,73 @@ def _decode_source_content(raw_content: object) -> str:
     )
 
 
+class _UnsetCalibration:
+    """Sentinel distinguishing omitted ``calibration`` from explicit ``None``."""
+
+
+_CALIBRATION_UNSET = _UnsetCalibration()
+
+
 def create_app(
     *,
     settings: GatewaySettings | None = None,
     config: DleConfig | None = None,
     model_port: ModelPort | None = None,
     registry: ModelRegistry | None = None,
-    calibration: CalibrationArtifact | None = DEFAULT_PHASE2_CALIBRATION,
+    calibration: CalibrationArtifact | _UnsetCalibration | None = _CALIBRATION_UNSET,
     nli_scorer: NliScorer | None = None,
 ) -> FastAPI:
     """Create and configure the FastAPI middleware application."""
+    log = get_logger("dle.edge.gateway")
     eff_settings = settings if settings is not None else GatewaySettings.from_env()
     validate_bind(eff_settings.bind_address, allow_lan=eff_settings.allow_lan)
     eff_settings.register_secrets()
 
     eff_config = config if config is not None else load_config(eff_settings.config_dir)
-    eff_registry = registry if registry is not None else ModelRegistry(eff_config.model_pins)
+
+    eff_calibration: CalibrationArtifact | None
+    calibration_load_failed = False
+    if isinstance(calibration, _UnsetCalibration):
+        candidate_cal_path = eff_settings.calibration_path
+        if candidate_cal_path is None:
+            default_cal = eff_settings.config_dir / "calibration" / "cal-phase6-v1.json"
+            if default_cal.is_file():
+                candidate_cal_path = default_cal
+        if candidate_cal_path is not None:
+            try:
+                eff_calibration = load_calibration_artifact(
+                    candidate_cal_path,
+                    require_approved=True,
+                    min_kappa=0.6,
+                )
+            except (CalibrationError, OSError, ValueError) as exc:
+                log.error(
+                    "gateway.calibration_load_failed",
+                    path=str(candidate_cal_path),
+                    error_type=type(exc).__name__,
+                )
+                eff_calibration = None
+                calibration_load_failed = True
+        else:
+            eff_calibration = DEFAULT_PHASE2_CALIBRATION
+    else:
+        eff_calibration = calibration
+
+    if registry is not None:
+        eff_registry = registry
+    else:
+        calibrated_versions = (
+            dict(eff_calibration.model_versions)
+            if eff_calibration is not None and eff_calibration.model_versions
+            else None
+        )
+        eff_registry = ModelRegistry(
+            eff_config.model_pins,
+            calibrated_versions=calibrated_versions,
+        )
+    if calibration_load_failed:
+        eff_registry.drift_latched = True
+
     sessions = InMemorySessionStore()
     fn_registry = FunctionRegistry(eff_config.functions, eff_config.profiles)
     register_phase1_functions(fn_registry, eff_config.notices)
@@ -311,6 +365,16 @@ def create_app(
     receipt_repo = ReceiptRepository(stores.receipts)
     registry_repo = RegistryRepository(stores.registry)
     ops_repo = OpsRepository(stores.ops)
+    if calibration_load_failed:
+        ops_repo.upsert_drift_state(
+            c_t=0.0,
+            mu0=DEFAULT_PHASE2_CALIBRATION.mu_0,
+            delta=DEFAULT_PHASE2_CALIBRATION.drift_delta,
+            lambda_val=DEFAULT_PHASE2_CALIBRATION.drift_lambda,
+            is_latched=True,
+            latch_reason="invalid_or_unapproved_calibration_artifact",
+            updated_utc=datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        )
     ref_manifest = eff_settings.config_dir / "reference" / "manifest.yaml"
     reference_catalog = (
         load_reference_catalog(ref_manifest, ref_dir=ref_manifest.parent)
@@ -382,10 +446,9 @@ def create_app(
         function_flags=eff_config.function_flags,
         intake_router=intake_router,
         reference_catalog=reference_catalog,
-        calibration=calibration,
+        calibration=eff_calibration,
         egress=egress,
     )
-    log = get_logger("dle.edge.gateway")
 
     @asynccontextmanager
     async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
@@ -465,8 +528,11 @@ def create_app(
         reachable = await runtime.model_port.is_reachable()
         kernel_count = sum(1 for fn in runtime.config.functions.functions if fn.level == "kernel")
         ops_drift = runtime.ops_repo.get_drift_state()
-        is_latched = runtime.registry.drift_latched or bool(
-            ops_drift is not None and ops_drift.get("is_latched")
+        cal_invalid = runtime.calibration is None or runtime.calibration.status != "approved"
+        is_latched = (
+            runtime.registry.drift_latched
+            or bool(ops_drift is not None and ops_drift.get("is_latched"))
+            or cal_invalid
         )
         drift_state = "tripped" if is_latched else "clear"
         status = "ok" if reachable and not is_latched else "degraded"
@@ -479,6 +545,12 @@ def create_app(
             "driftLatch": drift_state,
             "kernelFunctions": kernel_count,
             "version": __version__,
+            "calibrationArtifactId": (
+                runtime.calibration.artifact_id if runtime.calibration is not None else None
+            ),
+            "calibrationThreshold": (
+                runtime.calibration.threshold if runtime.calibration is not None else None
+            ),
         }
 
     @app.get("/v1beta/models")
@@ -889,13 +961,41 @@ def create_app(
                 file_path="request",
                 pointer="/confirm",
             )
+
+        cal_dir = runtime.settings.config_dir / "calibration"
+        try:
+            loaded_cal = find_approved_calibration_artifact(cal_dir, artifact_id)
+        except CalibrationError as exc:
+            raise ContractValidationError(
+                exc.message,
+                file_path="request",
+                pointer="/calibrationArtifactId",
+            ) from exc
+
+        if loaded_cal is not None:
+            runtime.calibration = loaded_cal
+            if loaded_cal.model_versions:
+                runtime.registry.set_calibrated_versions(dict(loaded_cal.model_versions))
+            active_cal = loaded_cal
+        elif (
+            runtime.calibration is not None
+            and runtime.calibration.artifact_id == artifact_id
+            and runtime.calibration.status == "approved"
+        ):
+            active_cal = runtime.calibration
+        else:
+            raise ContractValidationError(
+                f"unknown or unapproved calibrationArtifactId {artifact_id!r}",
+                file_path="request",
+                pointer="/calibrationArtifactId",
+            )
+
         runtime.registry.reset_drift_latch()
-        cal = runtime.calibration or DEFAULT_PHASE2_CALIBRATION
         runtime.ops_repo.upsert_drift_state(
             c_t=0.0,
-            mu0=cal.mu_0,
-            delta=cal.drift_delta,
-            lambda_val=cal.drift_lambda,
+            mu0=active_cal.mu_0,
+            delta=active_cal.drift_delta,
+            lambda_val=active_cal.drift_lambda,
             is_latched=False,
             latch_reason=None,
             updated_utc=datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -903,7 +1003,8 @@ def create_app(
         log.info(
             "admin.drift_reset",
             admin_id=admin_id,
-            calibration_artifact_id=artifact_id,
+            calibration_artifact_id=active_cal.artifact_id,
+            calibration_artifact_sha256=active_cal.artifact_sha256,
         )
         _record_http_metric("/admin/drift/reset", 204)
         return Response(status_code=204, headers={"X-DLE-API-Version": DLE_API_VERSION})

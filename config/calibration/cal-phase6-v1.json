@@ -1,0 +1,43 @@
+{
+  "accepted_count": 52,
+  "accepted_loss_sum": 0.0,
+  "adjudication_rate": 0.06,
+  "alpha": 0.05,
+  "approved_by": "ai-risk-owner",
+  "approved_utc": "2026-11-24T04:40:18Z",
+  "artifact_id": "cal-phase6-v1",
+  "artifact_sha256": "42b559706eee54a442b6d8314972a75de66f80f184af64541a72028928c849e5",
+  "cohen_kappa": 0.878247,
+  "conditional_accepted_loss": 0.0,
+  "corrected_risk": 0.009901,
+  "created_utc": "2026-11-24T04:40:18Z",
+  "drift_delta": 0.02,
+  "drift_lambda": 3.3624,
+  "empirical_coverage": 0.52,
+  "estimated_in_control_arl": 1000.92,
+  "grader_exact_agreement": 0.94,
+  "grid_step": 0.005,
+  "heldout_hashes_sha256": "d4fb38bf1cb359f6b7396316148030b665f2ea6c8e71a2a54087d64b7c1b09a5",
+  "model_versions": {
+    "gemini-4-carbon": "gemini-4-carbon-001",
+    "gemini-4-neon": "gemini-4-neon-001",
+    "gemini-embedding-001": "gemini-embedding-001-001"
+  },
+  "mu_0": 0.275692,
+  "n_cal": 100,
+  "policy_sha256": "ac5795382c582655346083f88168a4be4cdfd63b01963d7e9aa67fec5d887692",
+  "recommended_decay_rates": {
+    "amended": 0.0528,
+    "stable": 0.0,
+    "technical": 0.0175
+  },
+  "schema_version": "1.0.0",
+  "status": "approved",
+  "target_in_control_arl": 1000,
+  "threshold": 0.29,
+  "tier_distribution": {
+    "tier_1": 40,
+    "tier_2": 35,
+    "tier_3": 25
+  }
+}

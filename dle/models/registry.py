@@ -156,6 +156,12 @@ class ModelRegistry:
             return event
         return None
 
+    def set_calibrated_versions(self, calibrated_versions: Mapping[str, str]) -> None:
+        """Update expected calibrated ``modelVersion`` baselines from an approved artifact."""
+        self._calibrated_versions = {
+            _strip_model_prefix(k): str(v) for k, v in calibrated_versions.items()
+        }
+
     def reset_drift_latch(self) -> None:
         """Clear an active drift latch after calibration verification."""
         self.drift_latched = False

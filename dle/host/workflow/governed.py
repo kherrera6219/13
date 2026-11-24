@@ -1956,12 +1956,18 @@ async def run_governed_phase2(
         prior_drift = ops_repo.get_drift_state()
         prev_c = float(str(prior_drift["c_t"])) if prior_drift is not None else 0.0
         prev_latched = bool(prior_drift["is_latched"]) if prior_drift is not None else False
+        prev_latch_reason = (
+            str(prior_drift["latch_reason"])
+            if prior_drift is not None and prior_drift.get("latch_reason")
+            else None
+        )
         eff_cal = calibration if calibration is not None else DEFAULT_PHASE2_CALIBRATION
         cusum_c, drift_latched, _reason = update_cusum_drift(
             previous_c_t=prev_c,
             u_t=final_term_score.u,
             calibration=eff_cal,
             previous_latched=prev_latched or model_registry.drift_latched,
+            previous_latch_reason=prev_latch_reason,
             ops_repo=ops_repo,
         )
         gate = evaluate_release_gate(

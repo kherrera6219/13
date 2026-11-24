@@ -311,7 +311,7 @@ def test_gc12_governed_grounding_metadata_parse(compat_server: _LiveMiddlewareSe
         reset = raw_http.post(
             f"{compat_server.base_url}/admin/drift/reset",
             headers={"X-DLE-Admin-Key": COMPAT_ADMIN_KEY},
-            json={"calibrationArtifactId": "cal-phase2-dev-001", "confirm": "RESET"},
+            json={"calibrationArtifactId": "cal-phase6-v1", "confirm": "RESET"},
         )
         assert reset.status_code == 204
         reg = raw_http.post(

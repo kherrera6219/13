@@ -1,0 +1,180 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/calibration.schema.json",
+  "title": "CalibrationArtifact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_id",
+    "artifact_sha256",
+    "status",
+    "created_utc",
+    "approved_by",
+    "approved_utc",
+    "policy_sha256",
+    "model_versions",
+    "heldout_hashes_sha256",
+    "n_cal",
+    "alpha",
+    "grid_step",
+    "threshold",
+    "accepted_count",
+    "empirical_coverage",
+    "accepted_loss_sum",
+    "corrected_risk",
+    "conditional_accepted_loss",
+    "mu_0",
+    "drift_delta",
+    "drift_lambda",
+    "target_in_control_arl",
+    "estimated_in_control_arl",
+    "cohen_kappa",
+    "grader_exact_agreement",
+    "adjudication_rate",
+    "tier_distribution"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "artifact_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{1,63}$"
+    },
+    "artifact_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["staged", "approved", "revoked"]
+    },
+    "created_utc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "approved_by": {
+      "type": ["string", "null"]
+    },
+    "approved_utc": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "policy_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "model_versions": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "heldout_hashes_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "n_cal": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "alpha": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "exclusiveMaximum": 1
+    },
+    "grid_step": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 1
+    },
+    "threshold": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "accepted_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "empirical_coverage": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "accepted_loss_sum": {
+      "type": "number",
+      "minimum": 0
+    },
+    "corrected_risk": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "conditional_accepted_loss": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "mu_0": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "drift_delta": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "exclusiveMaximum": 1
+    },
+    "drift_lambda": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "target_in_control_arl": {
+      "type": "integer",
+      "minimum": 100
+    },
+    "estimated_in_control_arl": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "cohen_kappa": {
+      "type": "number",
+      "minimum": -1,
+      "maximum": 1
+    },
+    "grader_exact_agreement": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "adjudication_rate": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "tier_distribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tier_1", "tier_2", "tier_3"],
+      "properties": {
+        "tier_1": { "type": "integer", "minimum": 0 },
+        "tier_2": { "type": "integer", "minimum": 0 },
+        "tier_3": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "notes": {
+      "type": "string"
+    },
+    "recommended_decay_rates": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "number",
+        "minimum": 0
+      }
+    }
+  }
+}

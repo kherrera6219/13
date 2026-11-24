@@ -175,10 +175,20 @@ async def test_admin_routes_receipts_and_static_ui_serving(tmp_path):
         )
         assert bad_reset.status_code == 400
 
+        unknown_reset = await client.post(
+            "/admin/drift/reset",
+            headers=admin_headers,
+            json={"calibrationArtifactId": "cal-unknown", "confirm": "RESET"},
+        )
+        assert unknown_reset.status_code == 400
+        assert app.state.dle.registry.drift_latched is True
+
+        active_cal = app.state.dle.calibration
+        assert active_cal is not None
         reset = await client.post(
             "/admin/drift/reset",
             headers=admin_headers,
-            json={"calibrationArtifactId": "cal-1", "confirm": "RESET"},
+            json={"calibrationArtifactId": active_cal.artifact_id, "confirm": "RESET"},
         )
         assert reset.status_code == 204
         assert app.state.dle.registry.drift_latched is False

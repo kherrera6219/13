@@ -617,6 +617,8 @@ components:
         driftLatch: { type: string, enum: [clear, tripped] }
         kernelFunctions: { type: integer, description: "Registered kernel functions; must be 12" }
         version: { type: string }
+        calibrationArtifactId: { type: ["string", "null"] }
+        calibrationThreshold: { type: ["number", "null"] }
     ErrorResponse:
       type: object
       required: [error]
