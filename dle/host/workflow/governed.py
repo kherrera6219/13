@@ -17,6 +17,7 @@ from datetime import UTC, datetime
 from typing import Literal
 
 from dle.config import DleConfig
+from dle.config.models import FunctionFlagsConfig
 from dle.edge.sessions import session_id_after_response
 from dle.edge.tools import ToolBridge, extract_function_calls, extract_model_content
 from dle.edge.translator import RunRequest
@@ -36,6 +37,12 @@ from dle.host.services.graph import (
     GraphExpansionResult,
     align_crosswalk_terms,
     expand_bounded_ppr,
+)
+from dle.host.services.intake import (
+    IntakeDecision,
+    IntakeRouter,
+    ModelCallBudget,
+    safe_compute_cost,
 )
 from dle.host.services.ledger import LedgerService
 from dle.host.services.overlay import SessionOverlay
@@ -560,6 +567,8 @@ async def _execute_deliberation_round(
     list[dict[str, object]],
     list[dict[str, object]],
     bool,
+    int,
+    float,
 ]:
     profile_cfg = config.profiles.get(profile_name)
     toggles = profile_cfg.policy_functions if profile_cfg is not None else {}
@@ -605,6 +614,8 @@ async def _execute_deliberation_round(
     low_fit_objection = False
     selected_profile_ids: list[str] = []
     p_scores: dict[str, float] = {}
+    round_calls = 0
+    round_cost_usd = 0.0
 
     for wave in waves:
         for role_name in wave:
@@ -650,6 +661,15 @@ async def _execute_deliberation_round(
                 api_key=api_key,
             )
             call_ms = (time.perf_counter() - call_t0) * 1000.0
+            call_cost = safe_compute_cost(
+                model_registry,
+                outcome.model_id,
+                input_tokens=outcome.input_tokens,
+                output_tokens=outcome.output_tokens,
+                model_version=outcome.model_version,
+            )
+            round_calls += 1
+            round_cost_usd += call_cost
             ops_repo.record_model_call(
                 call_id=str(uuid.uuid4()),
                 run_id=run_id,
@@ -659,7 +679,7 @@ async def _execute_deliberation_round(
                 input_tokens=outcome.input_tokens,
                 output_tokens=outcome.output_tokens,
                 thought_tokens=0,
-                cost_usd=0.0,
+                cost_usd=call_cost,
                 duration_ms=round(call_ms, 3),
                 attempts=outcome.attempts,
                 status="ok" if outcome.valid else "failed",
@@ -772,7 +792,16 @@ async def _execute_deliberation_round(
         ),
         records=records,
     )
-    return outcomes, findings, role_call_entries, raw_role_objs, summaries, low_fit_objection
+    return (
+        outcomes,
+        findings,
+        role_call_entries,
+        raw_role_objs,
+        summaries,
+        low_fit_objection,
+        round_calls,
+        round(round_cost_usd, 8),
+    )
 
 
 def _build_attempt_record(
@@ -991,6 +1020,8 @@ async def run_governed_phase2(
     registry_repo: RegistryRepository | None = None,
     reference_catalog: ReferenceCatalog | None = None,
     tool_bridge: ToolBridge | None = None,
+    intake_router: IntakeRouter | None = None,
+    function_flags_override: FunctionFlagsConfig | None = None,
     tenant: str = "default",
     explicit_session: str | None = None,
     triage_override: Mapping[str, object] | None = None,
@@ -1004,6 +1035,9 @@ async def run_governed_phase2(
     profile = run_req.profile or "strict"
     profile_cfg = config.profiles.get(profile)
     blinded_assurance = bool(profile_cfg.blinded_assurance_roles) if profile_cfg else False
+    eff_function_flags = (
+        function_flags_override if function_flags_override is not None else config.function_flags
+    )
     proposal_id = "p0"
     records: list[FunctionRecord] = []
     trace = FrostTrace()
@@ -1019,6 +1053,7 @@ async def run_governed_phase2(
     overlay: SessionOverlay | None = None
     ledger = LedgerService(session_repo)
     writer_service = WriterService()
+    run_cost_usd = 0.0
 
     try:
         # ------------------------------------------------------------------ s01_ingest (L1)
@@ -1044,49 +1079,10 @@ async def run_governed_phase2(
 
         consequential_hits: tuple[ConsequentialToolHit, ...] = check_consequential_functions(
             run_req.contents,
-            config.function_flags,
+            eff_function_flags,
         )
         app_tool_passages = _extract_tool_passages(run_req.contents, utc_iso=utc_iso)
 
-        triage_payload: dict[str, object] = (
-            dict(triage_override)
-            if triage_override is not None
-            else {"d": 0, "r": 0, "m": 0, "binding": False, "z_hit": False}
-        )
-        k10_res = function_registry.invoke(
-            "DVSS-K10",
-            FunctionContext(
-                run_id=run_req.run_id,
-                attempt_id="att-0",
-                profile=profile,
-                payload=triage_payload,
-            ),
-            records=records,
-        )
-        raw_tier = k10_res.output.get("tier", 1)
-        tier = int(raw_tier) if isinstance(raw_tier, int | float) else 1
-        initial_tier = tier
-        raw_s = k10_res.output.get("s", 0)
-        s_score = int(raw_s) if isinstance(raw_s, int | float) else 0
-        raw_z = k10_res.output.get("z", 0)
-        z_flag = int(raw_z) if isinstance(raw_z, int | float) else 0
-        raw_roles = k10_res.output.get("active_roles", ["scholar"])
-        active_roles: tuple[str, ...] = (
-            tuple(str(r).lower().strip() for r in raw_roles if str(r).strip())
-            if isinstance(raw_roles, list) and raw_roles
-            else ("scholar",)
-        )
-        trace.record(
-            step_id="s01_ingest",
-            attempt_id="att-0",
-            event="initial",
-            status="ok",
-            dvss_ids=("DVSS-K01", "DVSS-P13", "DVSS-K10"),
-            duration_ms=(time.perf_counter() - s01_t0) * 1000.0,
-        )
-
-        # ------------------------------------------------------------------ s02_anchor (L1)
-        s02_t0 = time.perf_counter()
         coord_res: CoordinateParseResult | None = None
         proposed_anchors: list[str] = []
         extra_dle_meta: dict[str, object] = {}
@@ -1103,6 +1099,78 @@ async def run_governed_phase2(
                 as_of=datetime.now(UTC).date(),
                 binding_claim=binding_hint,
             )
+
+        intake_decision: IntakeDecision | None = None
+        if triage_override is not None:
+            triage_payload: dict[str, object] = dict(triage_override)
+        elif intake_router is not None:
+            intake_decision = await intake_router.evaluate(
+                query_str=query_str,
+                coordinate=coord_res.coordinate if coord_res is not None else None,
+                consequential_tool_hit=bool(consequential_hits),
+                api_key=api_key,
+            )
+            ops_repo.record_model_call(
+                call_id=str(uuid.uuid4()),
+                run_id=run_req.run_id,
+                job="intake",
+                model_id=intake_decision.model_id,
+                model_version=intake_decision.model_version,
+                input_tokens=intake_decision.input_tokens,
+                output_tokens=intake_decision.output_tokens,
+                thought_tokens=0,
+                cost_usd=intake_decision.cost_usd,
+                duration_ms=intake_decision.duration_ms,
+                attempts=1,
+                status="ok",
+                called_utc=utc_iso,
+            )
+            run_cost_usd += intake_decision.cost_usd
+            triage_payload = intake_decision.to_k10_payload()
+            extra_dle_meta["intake"] = intake_decision.to_public_metadata()
+        else:
+            triage_payload = {"d": 0, "r": 0, "m": 0, "binding": False, "z_hit": False}
+
+        k10_res = function_registry.invoke(
+            "DVSS-K10",
+            FunctionContext(
+                run_id=run_req.run_id,
+                attempt_id="att-0",
+                profile=profile,
+                payload=triage_payload,
+            ),
+            records=records,
+        )
+        raw_tier = k10_res.output.get("tier", 1)
+        tier = int(raw_tier) if isinstance(raw_tier, int | float) else 1
+        initial_tier = tier
+        raw_s = k10_res.output.get("s", 0)
+        s_score = int(raw_s) if isinstance(raw_s, int | float) else 0
+        raw_seff = k10_res.output.get("s_eff", s_score)
+        s_eff = int(raw_seff) if isinstance(raw_seff, int | float) else s_score
+        raw_z = k10_res.output.get("z", 0)
+        z_flag = int(raw_z) if isinstance(raw_z, int | float) else 0
+        raw_roles = k10_res.output.get("active_roles", ["scholar"])
+        active_roles: tuple[str, ...] = (
+            tuple(str(r).lower().strip() for r in raw_roles if str(r).strip())
+            if isinstance(raw_roles, list) and raw_roles
+            else ("scholar",)
+        )
+        call_budget = ModelCallBudget(config.tiers, initial_tier=initial_tier)
+        if intake_decision is not None:
+            call_budget.record_call(1)
+        trace.record(
+            step_id="s01_ingest",
+            attempt_id="att-0",
+            event="initial",
+            status="ok",
+            dvss_ids=("DVSS-K01", "DVSS-P13", "DVSS-K10"),
+            duration_ms=(time.perf_counter() - s01_t0) * 1000.0,
+        )
+
+        # ------------------------------------------------------------------ s02_anchor (L1)
+        s02_t0 = time.perf_counter()
+        if coord_res is not None:
             function_registry.invoke(
                 "DVSS-K02",
                 FunctionContext(
@@ -1168,6 +1236,7 @@ async def run_governed_phase2(
                 api_key=api_key,
                 job="passthrough",
             )
+            call_budget.record_call(1)
             tool_calls = extract_function_calls(probe_res.body)
             if tool_calls:
                 model_content = extract_model_content(probe_res.body)
@@ -1374,6 +1443,8 @@ async def run_governed_phase2(
                 raw_role_objs,
                 persona_summaries,
                 low_fit_obj,
+                round_calls,
+                round_cost_usd,
             ) = await _execute_deliberation_round(
                 run_id=run_req.run_id,
                 attempt_id=attempt_id,
@@ -1399,6 +1470,8 @@ async def run_governed_phase2(
                 utc_iso=utc_iso,
                 records=records,
             )
+            call_budget.record_call(round_calls)
+            run_cost_usd += round_cost_usd
             trace.record(
                 step_id="s05_deliberate",
                 attempt_id=attempt_id,
@@ -1586,6 +1659,15 @@ async def run_governed_phase2(
                 api_key=api_key,
             )
             call_ms = (time.perf_counter() - call_t0) * 1000.0
+            writer_cost = safe_compute_cost(
+                model_registry,
+                writer_res.model_id,
+                input_tokens=writer_res.input_tokens,
+                output_tokens=writer_res.output_tokens,
+                model_version=writer_res.model_version,
+            )
+            call_budget.record_call(1)
+            run_cost_usd += writer_cost
             ops_repo.record_model_call(
                 call_id=str(uuid.uuid4()),
                 run_id=run_req.run_id,
@@ -1595,7 +1677,7 @@ async def run_governed_phase2(
                 input_tokens=writer_res.input_tokens,
                 output_tokens=writer_res.output_tokens,
                 thought_tokens=0,
-                cost_usd=0.0,
+                cost_usd=writer_cost,
                 duration_ms=round(call_ms, 3),
                 attempts=writer_res.attempts,
                 status="ok",
@@ -1620,6 +1702,7 @@ async def run_governed_phase2(
                 draft_text=draft_str,
                 api_key=api_key,
             )
+            call_budget.record_call(1)
             verification = claim_verifier.verify(
                 claims=extraction.claims,
                 passages=merged_passages,
@@ -1779,6 +1862,7 @@ async def run_governed_phase2(
                 active_roles = esc.new_roles
                 escalated_once = True
                 escalation_reason = esc.reason
+                call_budget.on_escalate(next_tier=tier)
                 parent_attempt_id = attempt_id
                 last_event = "tier_escalation"
                 last_reason = esc.reason
@@ -1789,6 +1873,8 @@ async def run_governed_phase2(
                     status="escalated",
                     dvss_ids=("DVSS-P07",),
                 )
+                if not call_budget.can_spend(len(active_roles) + 2):
+                    break
                 attempt_idx += 1
                 continue
 
@@ -1837,6 +1923,16 @@ async def run_governed_phase2(
                 records=records,
             )
             if retry_dec.action == "retry":
+                needed_retry_calls = len(active_roles) + 2
+                if not call_budget.can_spend(needed_retry_calls):
+                    trace.record(
+                        step_id="s11_refine_decide",
+                        attempt_id=attempt_id,
+                        event=last_event,
+                        status="call_budget_exhausted",
+                        dvss_ids=("DVSS-K09",),
+                    )
+                    break
                 retries_used += 1
                 parent_attempt_id = attempt_id
                 last_event = "retry"
@@ -1981,6 +2077,10 @@ async def run_governed_phase2(
             "attemptsCount": len(attempts_log),
             "blindedAssuranceRoles": blinded_assurance,
             "consequentialTools": [h.name for h in consequential_hits],
+            "sEff": s_eff,
+            "modelCallsUsed": call_budget.used,
+            "modelCallBudget": call_budget.limit,
+            "costUsd": round(run_cost_usd, 6),
         }
         extra_dle_meta["personas"] = final_persona_summaries
         extra_dle_meta["steps"] = step_metadata
@@ -2029,7 +2129,7 @@ async def run_governed_phase2(
             escalated=escalated_once,
             u=final_term_score.u,
             duration_ms=round((time.perf_counter() - start_clock) * 1000.0, 3),
-            cost_usd=0.0,
+            cost_usd=round(run_cost_usd, 6),
             finished_utc=utc_iso,
         )
         return GovernedRunResult(

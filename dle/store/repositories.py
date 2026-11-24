@@ -12,6 +12,7 @@ import sqlite3
 import struct
 import threading
 from collections.abc import Mapping, Sequence
+from datetime import UTC, datetime, timedelta
 
 from dle.store.migrations import ensure_vector_table
 
@@ -801,6 +802,53 @@ class OpsRepository:
                 ),
             )
             self._conn.commit()
+
+    def cost_by_tier_daily(self, *, days: int = 7) -> list[dict[str, object]]:
+        """Aggregate daily USD spend and run counts by tier across the last ``days`` UTC days."""
+        window_days = max(1, min(365, int(days)))
+        cutoff_day = (datetime.now(UTC).date() - timedelta(days=window_days - 1)).isoformat()
+        with self._lock:
+            rows = self._conn.execute(
+                """
+                SELECT
+                    substr(finished_utc, 1, 10) AS day,
+                    tier,
+                    COALESCE(SUM(cost_usd), 0.0) AS cost_usd,
+                    COUNT(*) AS runs
+                FROM run_metrics
+                WHERE substr(finished_utc, 1, 10) >= ?
+                GROUP BY day, tier
+                ORDER BY day ASC, tier ASC
+                """,
+                (cutoff_day,),
+            ).fetchall()
+
+        buckets: dict[str, dict[str, object]] = {}
+        for row in rows:
+            day = str(row["day"])
+            tier_num = int(row["tier"])
+            cost_val = float(row["cost_usd"])
+            run_count = int(row["runs"])
+            entry = buckets.get(day)
+            if entry is None:
+                entry = {
+                    "date": day,
+                    "tier1Usd": 0.0,
+                    "tier2Usd": 0.0,
+                    "tier3Usd": 0.0,
+                    "totalUsd": 0.0,
+                    "runsByTier": {"1": 0, "2": 0, "3": 0},
+                }
+                buckets[day] = entry
+            tier_key = f"tier{tier_num}Usd"
+            if tier_key in entry:
+                entry[tier_key] = round(float(str(entry[tier_key])) + cost_val, 8)
+            entry["totalUsd"] = round(float(str(entry["totalUsd"])) + cost_val, 8)
+            rbt = entry["runsByTier"]
+            if isinstance(rbt, dict):
+                rbt[str(tier_num)] = int(rbt.get(str(tier_num), 0)) + run_count
+
+        return [buckets[day] for day in sorted(buckets)]
 
     def record_egress(
         self,

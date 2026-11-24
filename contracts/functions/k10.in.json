@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/k10.in.json",
+  "title": "DVSS_K10_Input",
+  "description": "Hybrid intake scoring input combining deterministic pillar/rule features, model R/M scores, deontic triggers, and failure-centroid hit.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["d", "r", "m"],
+  "properties": {
+    "d": { "type": "integer", "minimum": 0, "maximum": 3 },
+    "r": { "type": "integer", "minimum": 0, "maximum": 3 },
+    "m": { "type": "integer", "minimum": 0, "maximum": 3 },
+    "binding": { "type": "boolean" },
+    "z_hit": { "type": "boolean" },
+    "has_axis7": { "type": "boolean" },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

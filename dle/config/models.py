@@ -268,7 +268,7 @@ class ReceiptsConfig(_StrictModel):
 class ConsequentialFunctionFlag(_StrictModel):
     """Client tool flagged consequential for mandatory Regulator claim review."""
 
-    name: str = Field(min_length=1)
+    name: str = Field(min_length=1, pattern=r"^[A-Za-z_][A-Za-z0-9_.]*$")
     reason: str = Field(min_length=1)
 
 

@@ -14,7 +14,12 @@ from collections.abc import AsyncIterator, Mapping
 from dataclasses import dataclass
 
 from dle.errors import UpstreamApiError
-from dle.models.fake import _build_fake_role_artifact, extract_writer_question
+from dle.models.fake import (
+    _build_fake_role_artifact,
+    build_fake_embedding_vector,
+    build_fake_intake_json,
+    extract_writer_question,
+)
 from dle.models.port import ModelCallResult
 from dle.models.registry import ModelRegistry
 
@@ -374,6 +379,8 @@ class FakeUpstream:
 
             if job == "personas":
                 parts.append({"text": _build_fake_role_artifact(body)})
+            elif job == "intake":
+                parts.append({"text": build_fake_intake_json(body)})
             elif (
                 isinstance(gen_cfg, Mapping)
                 and gen_cfg.get("responseMimeType") == "application/json"
@@ -523,7 +530,7 @@ class FakeUpstream:
             CapturedRequest(method="embed", model=clean, payload=copied, job="embeddings")
         )
         return ModelCallResult(
-            body={"embedding": {"values": [0.5, 0.5, 0.5, 0.5]}},
+            body={"embedding": {"values": build_fake_embedding_vector(copied)}},
             status_code=200,
             attempts=1,
         )

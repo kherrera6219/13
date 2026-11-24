@@ -26,6 +26,7 @@ from fastapi.staticfiles import StaticFiles
 
 from dle import __version__
 from dle.config import DleConfig, load_config
+from dle.config.models import FunctionFlagsConfig
 from dle.edge.composer import DLE_API_VERSION, ResponseComposer
 from dle.edge.sessions import InMemorySessionStore, session_id_after_response
 from dle.edge.settings import GatewaySettings, validate_bind
@@ -48,9 +49,11 @@ from dle.host.services import (
     ClaimVerifier,
     Ed25519KeyManager,
     EvidenceService,
+    IntakeRouter,
     ReceiptSealer,
     ReferenceCatalog,
     RegistrySnapshot,
+    load_failure_centroids,
     load_reference_catalog,
     load_registry,
 )
@@ -135,6 +138,8 @@ class GatewayRuntime:
     key_manager: Ed25519KeyManager
     receipt_sealer: ReceiptSealer
     registry_snapshot: RegistrySnapshot
+    function_flags: FunctionFlagsConfig
+    intake_router: IntakeRouter | None = None
     reference_catalog: ReferenceCatalog | None = None
     calibration: CalibrationArtifact | None = DEFAULT_PHASE2_CALIBRATION
     egress: EgressClient | None = None
@@ -313,6 +318,15 @@ def create_app(
         else None
     )
     embeddings = EmbeddingService(eff_model_port, eff_registry)
+    centroid_path = eff_settings.config_dir / "intake" / "dev_failure_centroids.yaml"
+    centroid_catalog = load_failure_centroids(centroid_path) if centroid_path.is_file() else None
+    intake_router = IntakeRouter(
+        tiers_config=eff_config.tiers,
+        model_registry=eff_registry,
+        model_port=eff_model_port,
+        embedding_service=embeddings,
+        centroid_catalog=centroid_catalog,
+    )
 
     if nli_scorer is not None:
         eff_nli: NliScorer = nli_scorer
@@ -365,6 +379,8 @@ def create_app(
         key_manager=key_manager,
         receipt_sealer=receipt_sealer,
         registry_snapshot=registry_snapshot,
+        function_flags=eff_config.function_flags,
+        intake_router=intake_router,
         reference_catalog=reference_catalog,
         calibration=calibration,
         egress=egress,
@@ -390,7 +406,7 @@ def create_app(
     app.add_middleware(
         CORSMiddleware,
         allow_origins=list(eff_settings.cors_origins),
-        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_methods=["GET", "POST", "PUT", "OPTIONS"],
         allow_headers=["*"],
         expose_headers=[
             "X-DLE-Release-Mode",
@@ -596,6 +612,8 @@ def create_app(
             registry_repo=runtime.registry_repo,
             reference_catalog=runtime.reference_catalog,
             tool_bridge=runtime.tool_bridge,
+            intake_router=runtime.intake_router,
+            function_flags_override=runtime.function_flags,
             tenant=tenant,
             explicit_session=explicit_session,
         )
@@ -672,6 +690,8 @@ def create_app(
                     registry_repo=runtime.registry_repo,
                     reference_catalog=runtime.reference_catalog,
                     tool_bridge=runtime.tool_bridge,
+                    intake_router=runtime.intake_router,
+                    function_flags_override=runtime.function_flags,
                     tenant=tenant,
                     explicit_session=explicit_session,
                 )
@@ -919,6 +939,81 @@ def create_app(
         return Response(
             content=archive,
             media_type="application/zip",
+            headers={"X-DLE-API-Version": DLE_API_VERSION},
+        )
+
+    @app.get("/admin/function-flags")
+    async def get_function_flags(request: Request) -> JSONResponse:
+        _require_admin_auth(request, runtime.settings)
+        flags = runtime.function_flags
+        _record_http_metric("/admin/function-flags", 200)
+        return JSONResponse(
+            status_code=200,
+            content={
+                "schemaVersion": flags.schema_version,
+                "consequentialFunctions": [
+                    {"name": item.name, "reason": item.reason}
+                    for item in flags.consequential_functions
+                ],
+            },
+            headers={"X-DLE-API-Version": DLE_API_VERSION},
+        )
+
+    @app.put("/admin/function-flags")
+    async def put_function_flags(request: Request) -> JSONResponse:
+        admin_id = _require_admin_auth(request, runtime.settings)
+        raw_body = await _parse_json_object(request)
+        raw_flags = raw_body.get("consequentialFunctions")
+        if not isinstance(raw_flags, list):
+            raise ContractValidationError(
+                "consequentialFunctions must be an array",
+                file_path="request",
+                pointer="/consequentialFunctions",
+            )
+        schema_ver = str(raw_body.get("schemaVersion") or runtime.function_flags.schema_version)
+        try:
+            updated = FunctionFlagsConfig.model_validate(
+                {
+                    "schema_version": schema_ver,
+                    "consequential_functions": raw_flags,
+                }
+            )
+        except Exception as exc:
+            raise ContractValidationError(
+                f"invalid consequentialFunctions payload: {exc}",
+                file_path="request",
+                pointer="/consequentialFunctions",
+            ) from exc
+        runtime.function_flags = updated
+        log.info(
+            "admin.function_flags_updated",
+            admin_id=admin_id,
+            flag_count=len(updated.consequential_functions),
+        )
+        _record_http_metric("/admin/function-flags", 200)
+        return JSONResponse(
+            status_code=200,
+            content={
+                "schemaVersion": updated.schema_version,
+                "consequentialFunctions": [
+                    {"name": item.name, "reason": item.reason}
+                    for item in updated.consequential_functions
+                ],
+            },
+            headers={"X-DLE-API-Version": DLE_API_VERSION},
+        )
+
+    @app.get("/admin/metrics/cost-by-tier")
+    async def get_cost_by_tier(
+        request: Request,
+        days: int = Query(default=7, ge=1, le=90),
+    ) -> JSONResponse:
+        _require_admin_auth(request, runtime.settings)
+        series = runtime.ops_repo.cost_by_tier_daily(days=days)
+        _record_http_metric("/admin/metrics/cost-by-tier", 200)
+        return JSONResponse(
+            status_code=200,
+            content={"days": series},
             headers={"X-DLE-API-Version": DLE_API_VERSION},
         )
 

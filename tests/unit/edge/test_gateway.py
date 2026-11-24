@@ -448,3 +448,82 @@ async def test_governed_ppr_switch_disable_mode(tmp_path):
         rcpt = await client.get(f"/v1/receipts/{rcpt_id}", headers=headers)
         assert rcpt.status_code == 200
         assert rcpt.json()["payload"]["attempts"][0]["ppr_iterations"] == 0
+
+
+@pytest.mark.asyncio
+async def test_admin_function_flags_and_cost_by_tier_metrics(tmp_path):
+    """T-UNIT-EDGE-12: Verify function-flags GET/PUT, cost-by-tier metrics, and intake metadata."""
+    app = create_app(
+        settings=_make_settings(
+            data_dir=tmp_path / "data",
+            keys_dir=tmp_path / "keys",
+        ),
+        model_port=FakeModel(),
+    )
+    transport = httpx.ASGITransport(app=app)
+    headers = {"x-goog-api-key": "test-client-key"}
+    admin_headers = {"X-DLE-Admin-Key": "test-admin-key"}
+
+    async with httpx.AsyncClient(transport=transport, base_url="http://127.0.0.1:8740") as client:
+        unauth = await client.get("/admin/function-flags")
+        assert unauth.status_code == 401
+
+        get_flags = await client.get("/admin/function-flags", headers=admin_headers)
+        assert get_flags.status_code == 200
+        assert get_flags.json()["consequentialFunctions"] == []
+
+        bad_put = await client.put(
+            "/admin/function-flags",
+            headers=admin_headers,
+            json={"consequentialFunctions": [{"name": "not-valid-ident", "reason": "bad"}]},
+        )
+        assert bad_put.status_code == 400
+
+        put_flags = await client.put(
+            "/admin/function-flags",
+            headers=admin_headers,
+            json={
+                "schemaVersion": "1.0.0",
+                "consequentialFunctions": [
+                    {"name": "submit_purchase_order", "reason": "Creates binding PO"}
+                ],
+            },
+        )
+        assert put_flags.status_code == 200
+        assert put_flags.json()["consequentialFunctions"][0]["name"] == "submit_purchase_order"
+        assert len(app.state.dle.function_flags.consequential_functions) == 1
+
+        empty_cost = await client.get("/admin/metrics/cost-by-tier?days=7", headers=admin_headers)
+        assert empty_cost.status_code == 200
+        assert empty_cost.json()["days"] == []
+
+        clause = "Candidate B RF link budget maintains 5 GHz MCS9 rate."
+        await client.post(
+            "/admin/sources",
+            headers=admin_headers,
+            json={
+                "title": "RF Spec",
+                "authorityClass": "primary_text",
+                "content": {
+                    "mimeType": "text/plain",
+                    "data": base64.b64encode(clause.encode("utf-8")).decode("ascii"),
+                },
+            },
+        )
+        gen = await client.post(
+            "/v1beta/models/dle-13axis-strict:generateContent",
+            headers=headers,
+            json={"contents": [{"role": "user", "parts": [{"text": clause}]}]},
+        )
+        assert gen.status_code == 200
+        gen_meta = gen.json()["dleMetadata"]
+        assert "intake" in gen_meta
+        assert "rationale" not in gen_meta["intake"]
+        assert gen_meta["runSummary"]["costUsd"] > 0.0
+
+        cost_res = await client.get("/admin/metrics/cost-by-tier?days=7", headers=admin_headers)
+        assert cost_res.status_code == 200
+        days = cost_res.json()["days"]
+        assert len(days) == 1
+        assert days[0]["totalUsd"] > 0.0
+        assert sum(days[0]["runsByTier"].values()) == 1

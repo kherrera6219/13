@@ -274,6 +274,92 @@ paths:
             application/zip:
               schema: { type: string, contentEncoding: base64 }
         default: { $ref: "#/components/responses/Error" }
+  /admin/function-flags:
+    get:
+      tags: [admin]
+      operationId: getFunctionFlags
+      summary: Read consequential client function flags (US-14)
+      security: [{ adminKey: [] }]
+      responses:
+        "200":
+          description: Configured consequential function flags.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  schemaVersion: { type: string }
+                  consequentialFunctions:
+                    type: array
+                    items:
+                      type: object
+                      required: [name, reason]
+                      properties:
+                        name: { type: string }
+                        reason: { type: string }
+        default: { $ref: "#/components/responses/Error" }
+    put:
+      tags: [admin]
+      operationId: updateFunctionFlags
+      summary: Update consequential client function flags (US-14)
+      security: [{ adminKey: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [consequentialFunctions]
+              properties:
+                schemaVersion: { type: string }
+                consequentialFunctions:
+                  type: array
+                  items:
+                    type: object
+                    required: [name, reason]
+                    properties:
+                      name: { type: string }
+                      reason: { type: string }
+      responses:
+        "200":
+          description: Updated consequential function flags.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  schemaVersion: { type: string }
+                  consequentialFunctions:
+                    type: array
+                    items:
+                      type: object
+                      required: [name, reason]
+                      properties:
+                        name: { type: string }
+                        reason: { type: string }
+        default: { $ref: "#/components/responses/Error" }
+  /admin/metrics/cost-by-tier:
+    get:
+      tags: [admin]
+      operationId: getCostByTier
+      summary: Daily run counts and metered USD spend grouped by tier (US-15)
+      security: [{ adminKey: [] }]
+      parameters:
+        - in: query
+          name: days
+          schema: { type: integer, minimum: 1, maximum: 90, default: 7 }
+      responses:
+        "200":
+          description: Daily tier cost breakdown.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  days:
+                    type: array
+                    items: { type: object }
+        default: { $ref: "#/components/responses/Error" }
   /healthz:
     get:
       tags: [health]

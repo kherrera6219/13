@@ -2,6 +2,19 @@
 
 Running record for agents. Newest entry first. Keep each entry short: what changed, what was learned, what is next.
 
+## 2026-11-23 — Phase 5 Wave 5A: Hybrid Intake Router (H2 / DVSS-K10), Call Budgets, Cost Metering & Admin APIs
+
+**State.** Phase 5 Wave 5A complete (`FR-TIER-01..04`, `DVSS-K10`, `DLE-SPC-002`, `NFR-COST-01`, `US-14`, `US-15`). Complete `H2` hybrid intake scoring (`D/R/M/B/Z`, `S_eff = max(S, 3B, 6Z)`), `ModelCallBudget` (`9/21` Tier 1, `18/22` Tier 2, `18` Tier 3), real token cost metering into `ops.db`, 50-item dev challenge set (>= 95% recall verified), and Phase 5 admin routes (`/admin/function-flags`, `/admin/metrics/cost-by-tier`) are built and verified.
+
+**Changed.**
+- `config/intake/dev_failure_centroids.yaml` & `offline/dev_sets/intake_challenge_dev_50.jsonl`: Curated 7 dev failure-mode centroid clusters (`threshold: 0.55`) and 50 labeled Tier-3 challenge items.
+- `dle/models/fake.py` & `tests/gemini_compat/fake_upstream.py`: Added semantic 8-d channel-separated `build_fake_embedding_vector` (channel 7 benign isolation) and deterministic `build_fake_intake_json` (`job="intake"`).
+- `dle/host/services/intake.py`, `dle/host/functions/stubs.py`, `contracts/functions/k10.{in,out}.json`, `dle/config/models.py`: Implemented `IntakeRouter`, `FailureCentroidCatalog`, `ModelCallBudget`, `score_r_rules`, `detect_deontic_predicates`, `DVSS-K10` on-demand Tier-2/3 role logic, and identifier regex validation on `ConsequentialFunctionFlag.name`.
+- `dle/store/repositories.py`, `dle/host/workflow/governed.py`, `dle/edge/gateway.py`, `contracts/openapi.yaml`: Added `OpsRepository.cost_by_tier_daily`, orchestrator `IntakeRouter` + `ModelCallBudget` + dated `cost_usd` metering, `GET/PUT /admin/function-flags`, and `GET /admin/metrics/cost-by-tier`.
+- Added `tests/unit/host/services/test_intake_router.py` and extended `tests/unit/edge/test_gateway.py` (`219 passed, 2 skipped`, `90.81%` cov; `26` Python SDK; `24` JS SDK; Semgrep `0` findings).
+
+**Next.** Execute **Phase 5 Wave 5B (Phase 5 Exit Gate)**: build Browser Admin & Accessibility UI (`DriftBanner`, `FunctionFlagsEditor`, `CostByTierChart`, `HealthPanel`, `ExportDialog` + Storybook/axe tests), run `NFR-PERF-01` overhead benchmark, verify `dle-middleware:phase5` Docker E2E, and publish `reports/phase5_gate.md`.
+
 ## 2026-11-23 — Phase 4 Complete (Wave 4C Exit Gate: Browser Persona/Step UI, Storybook/axe, Docker E2E & Gate Report)
 
 **State.** Phase 4 (`H1`, `H8`, `H9`, `H11`, `FROST`, `DVSS-K03`, `K09`, `K12`, `P02`, `P07`, `P08`, `P10`, `P11`, `US-05..08`, Minimum Conforming Profile §18b) is complete and cleared via `reports/phase4_gate.md` (`dle-middleware:phase4`).

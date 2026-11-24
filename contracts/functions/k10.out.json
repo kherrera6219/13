@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dle.local/contracts/functions/k10.out.json",
+  "title": "DVSS_K10_Output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["s", "b", "z", "s_eff", "tier", "active_roles"],
+  "properties": {
+    "s": { "type": "integer", "minimum": 0, "maximum": 9 },
+    "b": { "type": "integer", "enum": [0, 1] },
+    "z": { "type": "integer", "enum": [0, 1] },
+    "s_eff": { "type": "integer", "minimum": 0, "maximum": 9 },
+    "tier": { "type": "integer", "enum": [1, 2, 3] },
+    "active_roles": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "enum": ["scholar", "practitioner", "regulator", "harmonizer"]
+      }
+    },
+    "starting_hops": { "type": "integer", "enum": [1, 2] },
+    "max_model_calls": { "type": "integer", "minimum": 1 },
+    "max_model_calls_escalated": { "type": "integer", "minimum": 1 },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

@@ -87,9 +87,10 @@ def _k09_retry(ctx: FunctionContext) -> FunctionResult:
 
 
 def _k10_hybrid_triage(ctx: FunctionContext) -> FunctionResult:
-    d_score = _as_int(ctx.payload.get("d", 0))
-    r_score = _as_int(ctx.payload.get("r", 0))
-    m_score = _as_int(ctx.payload.get("m", 0))
+    d_score = max(0, min(3, _as_int(ctx.payload.get("d", 0))))
+    r_score = max(0, min(3, _as_int(ctx.payload.get("r", 0))))
+    m_score = max(0, min(3, _as_int(ctx.payload.get("m", 0))))
+    has_axis7 = bool(ctx.payload.get("has_axis7", False))
     b_flag = 1 if bool(ctx.payload.get("binding", False)) or r_score >= 2 else 0
     z_flag = 1 if bool(ctx.payload.get("z_hit", False)) else 0
     s_score = d_score + r_score + m_score
@@ -97,29 +98,52 @@ def _k10_hybrid_triage(ctx: FunctionContext) -> FunctionResult:
 
     if s_eff >= 6:
         tier = 3
-        roles = ["scholar", "practitioner", "regulator", "harmonizer"]
+        starting_hops = 2
+        max_calls = 18
+        max_calls_esc = 18
+        if b_flag or z_flag:
+            roles = ["scholar", "practitioner", "regulator", "harmonizer"]
+        else:
+            roles = ["scholar", "practitioner"]
+            if r_score >= 1:
+                roles.append("regulator")
+            if has_axis7:
+                roles.append("harmonizer")
     elif s_eff >= 3:
         tier = 2
+        starting_hops = 2
+        max_calls = 18
+        max_calls_esc = 22
         roles = ["scholar", "practitioner"]
         if b_flag:
             roles.append("regulator")
+        if has_axis7:
+            roles.append("harmonizer")
     else:
         tier = 1
+        starting_hops = 1
+        max_calls = 9
+        max_calls_esc = 21
         roles = ["scholar"]
         if b_flag:
             roles.append("regulator")
 
-    return FunctionResult(
-        "ok",
-        {
-            "s": s_score,
-            "b": b_flag,
-            "z": z_flag,
-            "s_eff": s_eff,
-            "tier": tier,
-            "active_roles": roles,
-        },
-    )
+    output: dict[str, object] = {
+        "s": s_score,
+        "b": b_flag,
+        "z": z_flag,
+        "s_eff": s_eff,
+        "tier": tier,
+        "active_roles": roles,
+        "starting_hops": starting_hops,
+        "max_model_calls": max_calls,
+        "max_model_calls_escalated": max_calls_esc,
+    }
+    raw_evidence = ctx.payload.get("evidence")
+    if isinstance(raw_evidence, Mapping):
+        output["evidence"] = dict(raw_evidence)
+
+    return FunctionResult("ok", output)
 
 
 def _k12_ledger_merge(ctx: FunctionContext) -> FunctionResult:

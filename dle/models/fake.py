@@ -36,6 +36,280 @@ def _clean_model(model: str) -> str:
     return model.removeprefix("models/")
 
 
+_RISK_CHANNEL_TERMS: tuple[tuple[str, ...], ...] = (
+    (
+        "bypass",
+        "disable",
+        "override",
+        "circumvent",
+        "skip",
+        "waive",
+        "interlock",
+        "turn off",
+        "guardrail",
+        "verification gate",
+        "hold threshold",
+        "force release",
+        "force deployment",
+        "drift latch",
+        "veto",
+    ),
+    (
+        "jurisdiction",
+        "extraterritorial",
+        "preemption",
+        "mutually exclusive",
+        "contradict",
+        "contradictory",
+        "conflict",
+        "conflicting",
+        "treaty",
+        "gdpr",
+        "erasure",
+        "litigation hold",
+        "customs",
+        "secrecy",
+    ),
+    (
+        "wire transfer",
+        "purchase order",
+        "countersignature",
+        "signoff",
+        "sign-off",
+        "indemnity",
+        "irrevocable",
+        "escrow",
+        "disbursement",
+        "without approval",
+        "without executive",
+        "without finance",
+        "without legal",
+        "without delegated",
+        "treasury",
+        "settlement",
+    ),
+    (
+        "oncology",
+        "infusion",
+        "dosage",
+        "dose",
+        "pediatric",
+        "contraindicated",
+        "contraindication",
+        "radiation",
+        "triage",
+        "toxicology",
+        "allergy",
+        "septic",
+        "ventilator",
+        "potassium",
+        "sedative",
+        "lethal",
+    ),
+    (
+        "ignore previous",
+        "ignore all previous",
+        "disregard system",
+        "fabricate",
+        "invent",
+        "forge",
+        "forged",
+        "spoof",
+        "system instructions",
+        "embedded instructions",
+        "synthetic tmp",
+        "synthetic hypothesis",
+        "authoritative statute",
+        "plausible-sounding",
+        "statute numbers",
+        "no matching source",
+        "hidden policy",
+        "fake compliance",
+    ),
+    (
+        "exfiltrate",
+        "ssn",
+        "api key",
+        "api keys",
+        "private key",
+        "private encryption",
+        "signing private",
+        "credentials",
+        "health records",
+        "payroll",
+        "session cookies",
+        "pii",
+        "leak",
+        "dump",
+        "unredacted",
+    ),
+    (
+        "cascading",
+        "cascade",
+        "blackout",
+        "containment breach",
+        "irreversible",
+        "catastrophic",
+        "runaway",
+        "collapse",
+        "spillway",
+        "levee",
+        "chain reaction",
+        "telemetry outage",
+        "depletion",
+        "counterfactual",
+    ),
+)
+
+
+def _extract_embedding_text(payload: Mapping[str, object]) -> str:
+    content = payload.get("content")
+    if isinstance(content, Mapping) and isinstance(content.get("parts"), list):
+        texts = [
+            str(p.get("text"))
+            for p in content["parts"]
+            if isinstance(p, Mapping) and isinstance(p.get("text"), str)
+        ]
+        if texts:
+            return " ".join(texts)
+    return json.dumps(dict(payload), sort_keys=True, default=str)
+
+
+def build_fake_embedding_vector(payload: Mapping[str, object]) -> list[float]:
+    """Build deterministic L2-normalized 8-d embedding preserving risk clusters."""
+    canon = json.dumps(dict(payload), sort_keys=True, default=str)
+    lower = _extract_embedding_text(payload).lower()
+    raw = [0.0] * 8
+    risk_hits = 0.0
+    for idx, terms in enumerate(_RISK_CHANNEL_TERMS):
+        hits = float(sum(1 for term in terms if term in lower))
+        raw[idx] = hits
+        risk_hits += hits
+    raw[7] = 1.0 if risk_hits == 0.0 else 0.0
+
+    digest = hashlib.sha256(canon.encode("utf-8")).digest()
+    for idx in range(8):
+        raw[idx] += 0.08 * ((digest[idx] - 128) / 128.0)
+
+    norm = math.sqrt(sum(v * v for v in raw)) or 1.0
+    return [round(v / norm, 6) for v in raw]
+
+
+def build_fake_intake_json(payload: Mapping[str, object]) -> str:
+    """Emit deterministic ``intake`` JSON ``{R, M, binding_flag, rationale}``."""
+    summary = _extract_prompt_summary(payload)
+    q_match = re.search(r"<query>(.*?)</query>", summary, re.DOTALL)
+    query = (q_match.group(1) if q_match else summary).strip()
+    lower = f" {query.lower()} "
+
+    conflict_cues = (
+        "conflict",
+        "contradict",
+        "preemption",
+        "mutually exclusive",
+        "extraterritorial",
+        "supersede",
+    )
+    binding_reg_cues = (
+        "statute",
+        "treaty",
+        "gdpr",
+        "compliance",
+        "regulatory",
+        "regulation",
+        "binding",
+        "mandatory",
+        "prohibit",
+        "law",
+    )
+    guidance_cues = (
+        "policy",
+        "guidance",
+        "technical standard",
+        "safety standard",
+        "iso",
+        "sop",
+        "guideline",
+        "operating procedure",
+        "audit",
+        "advisory",
+    )
+    if any(cue in lower for cue in conflict_cues):
+        r_score = 3
+    elif any(cue in lower for cue in binding_reg_cues) or re.search(
+        r"\b(must|shall|prohibited|required)\b", lower
+    ):
+        r_score = 2
+    elif any(cue in lower for cue in guidance_cues):
+        r_score = 1
+    else:
+        r_score = 0
+
+    counterfactual_cues = (
+        "counterfactual",
+        "what if",
+        "simulate",
+        "cascad",
+        "worst-case",
+        "worst case",
+        "blackout",
+        "collapse",
+        "breach",
+        "runaway",
+        "scenario",
+    )
+    conditional_cues = (
+        "unless",
+        "if ",
+        "when ",
+        "depending on",
+        "conditional",
+        "reconcile",
+        "resolve",
+        "during ",
+        "multi-period",
+        "prior period",
+    )
+    comparison_cues = (
+        "compare",
+        "comparison",
+        "versus",
+        " vs ",
+        "difference between",
+        "tradeoff",
+        "distinguish",
+        "contrast",
+    )
+    if any(cue in lower for cue in counterfactual_cues):
+        m_score = 3
+    elif any(cue in lower for cue in conditional_cues):
+        m_score = 2
+    elif any(cue in lower for cue in comparison_cues):
+        m_score = 1
+    else:
+        m_score = 0
+
+    binding_flag = bool(
+        re.search(
+            r"\b(may|must|shall|prohibited|approve|authorize|permitted|required|compliant)\b",
+            lower,
+        )
+        or "binding" in lower
+        or "purchase order" in lower
+        or "wire transfer" in lower
+        or "waiver" in lower
+    )
+    rationale = f"Fake intake heuristic: R={r_score}, M={m_score}, binding={binding_flag}."
+    return json.dumps(
+        {
+            "R": r_score,
+            "M": m_score,
+            "binding_flag": binding_flag,
+            "rationale": rationale,
+        }
+    )
+
+
 def _default_catalog() -> list[dict[str, object]]:
     return [
         {
@@ -211,6 +485,8 @@ class FakeModel:
         response_text: str
         if job == "personas":
             response_text = _build_fake_role_artifact(payload)
+        elif job == "intake":
+            response_text = build_fake_intake_json(payload)
         elif isinstance(gen_cfg, Mapping) and gen_cfg.get("responseMimeType") == "application/json":
             response_text = json.dumps({"echo": prompt_summary, "job": job})
         elif job == "writer":
@@ -395,12 +671,7 @@ class FakeModel:
         clean = _clean_model(model)
         recorded_payload = copy.deepcopy({str(k): v for k, v in payload.items()})
         self.calls.append(RecordedModelCall("embed", clean, recorded_payload, "embeddings"))
-        digest = hashlib.sha256(
-            json.dumps(recorded_payload, sort_keys=True, default=str).encode("utf-8")
-        ).digest()
-        raw = [((digest[i] - 128) / 128.0) or 0.01 for i in range(8)]
-        norm = math.sqrt(sum(v * v for v in raw)) or 1.0
-        vec = [round(v / norm, 6) for v in raw]
+        vec = build_fake_embedding_vector(recorded_payload)
         return ModelCallResult(body={"embedding": {"values": vec}}, status_code=200, attempts=1)
 
     async def is_reachable(self) -> bool:
@@ -413,5 +684,7 @@ __all__ = [
     "FakeModel",
     "RecordedModelCall",
     "_build_fake_role_artifact",
+    "build_fake_embedding_vector",
+    "build_fake_intake_json",
     "extract_writer_question",
 ]
