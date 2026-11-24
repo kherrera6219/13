@@ -4,8 +4,12 @@ import { AddressGraphDrawer } from "./components/AddressGraphDrawer";
 import { ChatComposer, type ComposerSubmitPayload } from "./components/ChatComposer";
 import { ClaimsTable } from "./components/ClaimsTable";
 import { MessageBubble } from "./components/MessageBubble";
+import { PersonaChips } from "./components/PersonaChips";
+import { PersonaDrawer } from "./components/PersonaDrawer";
 import { ReceiptViewer } from "./components/ReceiptViewer";
+import { RunSummaryCard } from "./components/RunSummaryCard";
 import { SourceRegistryTable } from "./components/SourceRegistryTable";
+import { StepTimeline } from "./components/StepTimeline";
 import {
   fetchHealth,
   fetchSources,
@@ -38,6 +42,7 @@ export function App() {
   const [sessionOverride, setSessionOverride] = useState("");
   const [runs, setRuns] = useState<ChatRun[]>([]);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  const [selectedPersonaAxis, setSelectedPersonaAxis] = useState<number | null>(null);
   const [sending, setSending] = useState(false);
   const [latestHeaders, setLatestHeaders] = useState<DleHeaders | null>(null);
   const [health, setHealth] = useState<HealthStatus | null>(null);
@@ -207,6 +212,7 @@ export function App() {
       if (result.run.receiptId) {
         setSelectedRunId(result.run.id);
       }
+      setSelectedPersonaAxis(result.run.personas?.[0]?.roleAxis ?? null);
     } catch (err) {
       const friendly = formatFriendlyError(err);
       const errRun: ChatRun = {
@@ -232,6 +238,11 @@ export function App() {
     assistantRuns.find((r) => r.id === selectedRunId) ??
     [...assistantRuns].reverse().find((r) => r.receiptId !== null) ??
     assistantRuns[assistantRuns.length - 1] ??
+    null;
+  const inspectedPersonas = inspectedRun?.personas ?? [];
+  const activePersona =
+    inspectedPersonas.find((p) => p.roleAxis === selectedPersonaAxis) ??
+    inspectedPersonas[0] ??
     null;
 
   const healthClass = healthError
@@ -357,7 +368,10 @@ export function App() {
                     key={run.id}
                     run={run}
                     selected={inspectedRun?.id === run.id}
-                    onSelectReceipt={(selected) => setSelectedRunId(selected.id)}
+                    onSelectReceipt={(selected) => {
+                      setSelectedRunId(selected.id);
+                      setSelectedPersonaAxis(selected.personas?.[0]?.roleAxis ?? null);
+                    }}
                   />
                 ))
               )}
@@ -383,6 +397,26 @@ export function App() {
               <dd className="dle-mono">{health?.driftLatch ?? "—"}</dd>
             </dl>
 
+            <RunSummaryCard
+              runSummary={inspectedRun?.runSummary ?? null}
+              releaseMode={inspectedRun?.releaseMode ?? latestHeaders?.releaseMode ?? null}
+              terminalU={inspectedRun?.terminalU ?? null}
+            />
+            <PersonaChips
+              personas={inspectedPersonas}
+              selectedRoleAxis={activePersona?.roleAxis ?? null}
+              onSelectPersona={(axis) => setSelectedPersonaAxis(axis)}
+            />
+            <PersonaDrawer
+              persona={activePersona}
+              objections={inspectedRun?.objections ?? []}
+            />
+            <StepTimeline
+              steps={inspectedRun?.steps ?? []}
+              parkedToolName={
+                inspectedRun?.releaseMode === "tool_call" ? inspectedRun.toolCallName : undefined
+              }
+            />
             <ClaimsTable claims={inspectedRun?.claims ?? []} />
             <AddressGraphDrawer
               coordinate={inspectedRun?.coordinate ?? null}

@@ -407,3 +407,115 @@
 .dle-axis-row {
   display: contents;
 }
+
+.dle-chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dle-space-2);
+}
+
+.dle-persona-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--dle-space-1);
+  min-width: 140px;
+  min-height: var(--dle-touch-min);
+  padding: var(--dle-space-2);
+  border: 1px solid var(--dle-border);
+  border-radius: var(--dle-radius-sm);
+  background-color: var(--dle-bg);
+  color: var(--dle-text);
+  font-family: var(--dle-font-sans);
+  font-size: var(--dle-text-xs);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--dle-transition);
+}
+
+.dle-persona-chip:hover {
+  border-color: var(--dle-accent);
+}
+
+.dle-persona-chip--selected {
+  border-color: var(--dle-accent);
+  background-color: var(--dle-surface);
+  box-shadow: inset 0 0 0 1px var(--dle-accent);
+}
+
+.dle-persona-chip-top {
+  display: flex;
+  align-items: center;
+  gap: var(--dle-space-2);
+}
+
+.dle-chip-meta {
+  font-size: var(--dle-text-xs);
+  color: var(--dle-text-muted);
+}
+
+.dle-chip-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dle-space-1);
+}
+
+.dle-timeline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--dle-space-1);
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.dle-timeline-item {
+  border: 1px solid var(--dle-border);
+  border-radius: var(--dle-radius-sm);
+  background-color: var(--dle-bg);
+  padding: var(--dle-space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--dle-space-1);
+  font-size: var(--dle-text-xs);
+}
+
+.dle-timeline-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--dle-space-2);
+}
+
+.dle-timeline-step {
+  font-weight: var(--dle-weight-strong);
+  color: var(--dle-text);
+}
+
+.dle-timeline-attempt {
+  color: var(--dle-accent);
+}
+
+.dle-step-park-banner {
+  padding: var(--dle-space-2);
+  border: 1px solid var(--dle-accent);
+  border-radius: var(--dle-radius-sm);
+  background-color: var(--dle-bg);
+  color: var(--dle-text);
+  font-size: var(--dle-text-xs);
+}
+
+.dle-sub-heading {
+  margin: 0;
+  font-size: var(--dle-text-xs);
+  font-weight: var(--dle-weight-strong);
+  color: var(--dle-text-muted);
+}
+
+.dle-finding-text {
+  margin: var(--dle-space-1) 0 0;
+  font-size: var(--dle-text-xs);
+  color: var(--dle-text);
+}

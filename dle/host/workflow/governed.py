@@ -719,6 +719,19 @@ async def _execute_deliberation_round(
                     "objectionsCount": len(objs_list),
                     "inputSha256": outcome.input_sha256,
                     "outputSha256": outcome.output_sha256,
+                    "findings": [
+                        {
+                            "scope": str(cl.get("scope", "general")),
+                            "assertion": str(cl.get("assertion", "")),
+                            "passageIds": (
+                                [str(x) for x in cl.get("passage_ids", [])]
+                                if isinstance(cl.get("passage_ids"), list)
+                                else []
+                            ),
+                        }
+                        for cl in claims_list
+                        if isinstance(cl, Mapping)
+                    ],
                 }
             )
 

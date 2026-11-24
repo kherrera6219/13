@@ -2,6 +2,17 @@
 
 Running record for agents. Newest entry first. Keep each entry short: what changed, what was learned, what is next.
 
+## 2026-11-23 — Phase 4 Complete (Wave 4C Exit Gate: Browser Persona/Step UI, Storybook/axe, Docker E2E & Gate Report)
+
+**State.** Phase 4 (`H1`, `H8`, `H9`, `H11`, `FROST`, `DVSS-K03`, `K09`, `K12`, `P02`, `P07`, `P08`, `P10`, `P11`, `US-05..08`, Minimum Conforming Profile §18b) is complete and cleared via `reports/phase4_gate.md` (`dle-middleware:phase4`).
+
+**Changed.**
+- `dle/host/workflow/governed.py` & `tests/engines/test_phase4_orchestrator_conformance.py`: Added structured `findings` to `dleMetadata.personas` summaries, asserted findings across §18 conformance tests, and added opt-in `test_phase4_live_gemini_conformance_opt_in` gated by `DLE_LIVE_GEMINI_API_KEY`.
+- `ui/src/`: Added Phase 4 types (`RunSummary`, `PersonaSummary`, `PersonaObjectionItem`, `StepTraceItem`) & `extractObjectionsFromReceipt` / `extractDleMetadata` in `dleClient.ts`; built `RunSummaryCard`, `PersonaChips`, `StepTimeline`, and `PersonaDrawer` plus CSF3 fixtures (`src/fixtures/phase4.ts`), Storybook stories (`49/49` `test-storybook` + `axe-core` passed), and `App.tsx` Run Inspector integration.
+- `reports/phase4_gate.md`, `docs/traceability/rtm.csv`, `CHANGELOG.md`: Recorded Wave 4C / Phase 4 Exit Gate verification (`212 passed, 2 skipped`, `90.69%` cov, `26` Python SDK, `24` JS SDK, `pip-audit` 0 CVEs, Semgrep 0 findings, and `LIVE_E2E_PHASE4_OK`).
+
+**Next.** Execute **Phase 5 (Hybrid Intake Router, Tiers & Full Admin/Accessibility Polish)**: implement complete `H2` / `DVSS-K10` scoring (`D/R/M/B/Z`, `gemini-embedding-001` failure-centroid, `S_eff = max(S, 3B, 6Z)`), enforce tier call budgets (`9/21`, `18/22`, `18`), >= 95% recall on 50-item dev challenge set, Browser Admin UI (`DriftBanner`, `FunctionFlagsEditor`, `CostByTierChart`, `HealthPanel`, `ExportDialog`), and `NFR-PERF-01` overhead benchmark.
+
 ## 2026-11-23 — Phase 4 Wave 4B: 12-Step FROST Orchestrator, Cutoff-Blind Retries K09, Escalation P07 & Tool Parking
 
 **State.** Phase 4 Wave 4B complete (`FR-WF-01..07`, `FR-FL-01..07`, `FR-QP-06`, `FR-TOOL-02..05`, `DVSS-K09`, `DVSS-P07`). Full 12-step governed loop (`s01_ingest`..`s12_seal`) across all 10 FROST layers (`l01_grounding`..`l10_receipt`) is wired into `dle/host/workflow/governed.py` and `dle/edge/gateway.py` with cutoff-blind `<= 2` retries (`DVSS-K09`), one-time binding/consequential Regulator escalation (`DVSS-P07`), blinded assurance ordering, Step-4 tool park/resume, and end-to-end §18 conformance tests on both `FakeModel` and `FakeUpstream`.

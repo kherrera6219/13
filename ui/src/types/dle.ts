@@ -117,6 +117,61 @@ export interface GraphSummary {
   edges: GraphEdgeItem[];
 }
 
+export interface RunSummary {
+  initialTier: number;
+  finalTier: number;
+  escalated: boolean;
+  escalationReason: string | null;
+  retries: number;
+  maxRetries: number;
+  attemptsCount: number;
+  blindedAssuranceRoles: boolean;
+  consequentialTools: string[];
+}
+
+export interface PersonaFindingItem {
+  scope: string;
+  assertion: string;
+  passageIds: string[];
+}
+
+export interface PersonaSummary {
+  roleAxis: number;
+  roleName: string;
+  profileId: string;
+  mScore: number;
+  tokenBudget: number;
+  lowFit: boolean;
+  blinded: boolean;
+  falsificationEnabled: boolean;
+  valid: boolean;
+  claimsCount: number;
+  objectionsCount: number;
+  inputSha256: string;
+  outputSha256: string;
+  findings?: PersonaFindingItem[];
+}
+
+export interface PersonaObjectionItem {
+  objectionId: string;
+  roleAxis: number;
+  proposalId: string;
+  blocking: boolean;
+  predicate: string;
+  state: "open" | "closed";
+  closureEvidence: string[];
+}
+
+export interface StepTraceItem {
+  stepId: string;
+  layerId: string;
+  attemptId: string;
+  event: string;
+  status: string;
+  dvssIds: string[];
+  durationMs: number;
+}
+
 export interface DleHeaders {
   releaseMode: ReleaseMode;
   receiptId: string | null;
@@ -144,6 +199,10 @@ export interface ChatRun {
   terminalU?: number | null;
   coordinate?: CoordinateSummary | null;
   graph?: GraphSummary | null;
+  runSummary?: RunSummary | null;
+  personas?: PersonaSummary[];
+  steps?: StepTraceItem[];
+  objections?: PersonaObjectionItem[];
   timestamp: string;
 }
 

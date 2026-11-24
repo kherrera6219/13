@@ -9,8 +9,12 @@ import type {
   EvidenceSource,
   GraphSummary,
   HealthStatus,
+  PersonaObjectionItem,
+  PersonaSummary,
   ReleaseMode,
+  RunSummary,
   SignedReceipt,
+  StepTraceItem,
 } from "../types/dle";
 
 export interface SendMessageInput {
@@ -178,6 +182,40 @@ export function extractClaimsFromReceipt(receipt: SignedReceipt): ClaimRow[] {
   });
 }
 
+export function extractObjectionsFromReceipt(receipt: SignedReceipt): PersonaObjectionItem[] {
+  const attempts = receipt.payload.attempts;
+  if (!Array.isArray(attempts) || attempts.length === 0) {
+    return [];
+  }
+  const lastAttempt = attempts[attempts.length - 1];
+  const rawObjs = Array.isArray(lastAttempt.objections) ? lastAttempt.objections : [];
+  return rawObjs.map((raw, idx) => {
+    const objectionId =
+      typeof raw.objection_id === "string" && raw.objection_id.length > 0
+        ? raw.objection_id
+        : `obj-${idx + 1}`;
+    const roleAxis = typeof raw.role_axis === "number" ? raw.role_axis : 10;
+    const proposalId =
+      typeof raw.proposal_id === "string" && raw.proposal_id.length > 0
+        ? raw.proposal_id
+        : "prop-1";
+    const blocking = Boolean(raw.blocking);
+    const predicate = typeof raw.predicate === "string" ? raw.predicate : "";
+    const state: "open" | "closed" = raw.state === "closed" ? "closed" : "open";
+    const rawClosure = Array.isArray(raw.closure_evidence) ? raw.closure_evidence : [];
+    const closureEvidence = rawClosure.filter((item): item is string => typeof item === "string");
+    return {
+      objectionId,
+      roleAxis,
+      proposalId,
+      blocking,
+      predicate,
+      state,
+      closureEvidence,
+    };
+  });
+}
+
 export async function fetchHealth(baseUrl: string): Promise<HealthStatus> {
   const target = `${baseUrl.replace(/\/$/, "")}/healthz`;
   const resp = await fetch(target);
@@ -257,8 +295,11 @@ export async function sendChatMessage(input: SendMessageInput): Promise<SendMess
   };
   let capturedCoordinate: CoordinateSummary | null = null;
   let capturedGraph: GraphSummary | null = null;
+  let capturedRunSummary: RunSummary | null = null;
+  let capturedPersonas: PersonaSummary[] = [];
+  let capturedSteps: StepTraceItem[] = [];
 
-  const extractDlePhase3 = (obj: unknown) => {
+  const extractDleMetadata = (obj: unknown) => {
     if (!obj || typeof obj !== "object") {
       return;
     }
@@ -273,6 +314,24 @@ export async function sendChatMessage(input: SendMessageInput): Promise<SendMess
     }
     if (rec.graph && typeof rec.graph === "object") {
       capturedGraph = rec.graph as GraphSummary;
+    }
+    if (rec.runSummary && typeof rec.runSummary === "object") {
+      capturedRunSummary = rec.runSummary as RunSummary;
+    }
+    if (Array.isArray(rec.personas)) {
+      capturedPersonas = rec.personas as PersonaSummary[];
+    }
+    if (Array.isArray(rec.steps)) {
+      capturedSteps = rec.steps as StepTraceItem[];
+    }
+    if (typeof rec.tier === "number" && !Number.isNaN(rec.tier)) {
+      captured.tier = rec.tier;
+    }
+    if (typeof rec.releaseMode === "string") {
+      captured.releaseMode = normalizeReleaseMode(rec.releaseMode, false);
+    }
+    if (typeof rec.receiptId === "string" && rec.receiptId.length > 0) {
+      captured.receiptId = rec.receiptId;
     }
   };
 
@@ -292,7 +351,7 @@ export async function sendChatMessage(input: SendMessageInput): Promise<SendMess
     const contentType = response.headers.get("content-type") ?? "";
     if (contentType.includes("application/json")) {
       try {
-        extractDlePhase3(await response.clone().json());
+        extractDleMetadata(await response.clone().json());
       } catch {
         // Ignore clone parse issues on non-JSON error payloads.
       }
@@ -347,7 +406,7 @@ export async function sendChatMessage(input: SendMessageInput): Promise<SendMess
       if (chunkCitations.length > 0) {
         finalCitations = chunkCitations;
       }
-      extractDlePhase3(chunk);
+      extractDleMetadata(chunk);
     }
   } else {
     const response: GenerateContentResponse = await ai.models.generateContent({
@@ -359,6 +418,7 @@ export async function sendChatMessage(input: SendMessageInput): Promise<SendMess
       toolName = response.functionCalls[0].name;
     }
     finalCitations = extractCitations(response);
+    extractDleMetadata(response);
   }
 
   const finalMode: ReleaseMode =
@@ -369,11 +429,13 @@ export async function sendChatMessage(input: SendMessageInput): Promise<SendMess
 
   let receipt: SignedReceipt | null = null;
   let claims: ClaimRow[] = [];
+  let objections: PersonaObjectionItem[] = [];
   let terminalU: number | null = null;
   if (captured.receiptId) {
     try {
       receipt = await fetchReceipt(input.baseUrl, input.apiKey, captured.receiptId);
       claims = extractClaimsFromReceipt(receipt);
+      objections = extractObjectionsFromReceipt(receipt);
       terminalU = receipt.payload.decision.terminal_u;
     } catch {
       receipt = null;
@@ -398,6 +460,10 @@ export async function sendChatMessage(input: SendMessageInput): Promise<SendMess
     terminalU,
     coordinate: capturedCoordinate,
     graph: capturedGraph,
+    runSummary: capturedRunSummary,
+    personas: capturedPersonas,
+    steps: capturedSteps,
+    objections,
     timestamp: new Date().toISOString(),
   };
 

@@ -10,10 +10,14 @@ import * as ChatComposerStories from "./components/ChatComposer.stories";
 import * as CitationListStories from "./components/CitationList.stories";
 import * as ClaimsTableStories from "./components/ClaimsTable.stories";
 import * as MessageBubbleStories from "./components/MessageBubble.stories";
+import * as PersonaChipsStories from "./components/PersonaChips.stories";
+import * as PersonaDrawerStories from "./components/PersonaDrawer.stories";
 import * as ReceiptChipStories from "./components/ReceiptChip.stories";
 import * as ReceiptViewerStories from "./components/ReceiptViewer.stories";
 import * as ReleaseBadgeStories from "./components/ReleaseBadge.stories";
+import * as RunSummaryCardStories from "./components/RunSummaryCard.stories";
 import * as SourceRegistryTableStories from "./components/SourceRegistryTable.stories";
+import * as StepTimelineStories from "./components/StepTimeline.stories";
 
 type ComposedStory = ComponentType & {
   play?: (context: { canvasElement: HTMLElement }) => Promise<void> | void;
@@ -55,6 +59,22 @@ const storyGroups: Array<{ name: string; stories: Record<string, ComposedStory> 
   {
     name: "AddressGraphDrawer",
     stories: composeStories(AddressGraphDrawerStories) as unknown as Record<string, ComposedStory>,
+  },
+  {
+    name: "RunSummaryCard",
+    stories: composeStories(RunSummaryCardStories) as unknown as Record<string, ComposedStory>,
+  },
+  {
+    name: "PersonaChips",
+    stories: composeStories(PersonaChipsStories) as unknown as Record<string, ComposedStory>,
+  },
+  {
+    name: "StepTimeline",
+    stories: composeStories(StepTimelineStories) as unknown as Record<string, ComposedStory>,
+  },
+  {
+    name: "PersonaDrawer",
+    stories: composeStories(PersonaDrawerStories) as unknown as Record<string, ComposedStory>,
   },
 ];
 

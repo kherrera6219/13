@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import jsonschema
@@ -25,7 +26,13 @@ from dle.host.services import (
     load_registry,
 )
 from dle.host.workflow import DEFAULT_PHASE2_CALIBRATION, run_governed_workflow
-from dle.models import DeterministicLexicalNliScorer, EmbeddingService, ModelRegistry
+from dle.models import (
+    DeterministicLexicalNliScorer,
+    EgressClient,
+    EmbeddingService,
+    GeminiAdapter,
+    ModelRegistry,
+)
 from dle.models.fake import FakeModel
 from dle.store import (
     EvidenceRepository,
@@ -130,6 +137,11 @@ async def test_phase4_straight_run_frost_layers_profiles_and_receipt(tmp_path: P
         assert isinstance(meta, dict)
         assert meta["runSummary"]["attemptsCount"] == 1
         assert len(meta["steps"]) >= 12
+        personas_meta = meta["personas"]
+        assert isinstance(personas_meta, list) and len(personas_meta) >= 1
+        for p_entry in personas_meta:
+            assert isinstance(p_entry, dict)
+            assert isinstance(p_entry.get("findings"), list)
     finally:
         env.close()
 
@@ -320,6 +332,10 @@ async def test_phase4_blinded_assurance_runs_before_advocates(tmp_path: Path) ->
                 call_roles.append(11)
         assert call_roles[:2] == [10, 11]
         assert call_roles[2:] == [8, 9]
+        tier3_meta = res.body["dleMetadata"]
+        assert isinstance(tier3_meta, dict)
+        for p_entry in tier3_meta["personas"]:
+            assert isinstance(p_entry["findings"], list)
     finally:
         env.close()
 
@@ -502,6 +518,60 @@ async def test_phase4_fake_upstream_gemini_replay_parity(tmp_path: Path) -> None
         assert res.release_mode == "released"
         assert any(r.job == "personas" for r in upstream.recorded_requests)
         assert any(r.job == "writer" for r in upstream.recorded_requests)
+        upstream_meta = res.body["dleMetadata"]
+        assert isinstance(upstream_meta, dict)
+        assert all(isinstance(p.get("findings"), list) for p in upstream_meta["personas"])
         assert not list(RECEIPT_VALIDATOR.iter_errors(res.receipt))
     finally:
         env.close()
+
+
+@pytest.mark.skipif(
+    not os.environ.get("DLE_LIVE_GEMINI_API_KEY"),
+    reason="Set DLE_LIVE_GEMINI_API_KEY to run live Gemini API conformance",
+)
+@pytest.mark.asyncio
+async def test_phase4_live_gemini_conformance_opt_in(tmp_path: Path) -> None:
+    """T-ENG-WF-07: Opt-in §18 Phase 4 live Gemini conformance via GeminiAdapter."""
+    live_key = os.environ["DLE_LIVE_GEMINI_API_KEY"]
+    cfg = load_config(CONFIG_DIR)
+    reg = ModelRegistry(cfg.model_pins)
+    async with EgressClient(allowlist=cfg.egress) as egress:
+        gemini_port = GeminiAdapter(egress=egress, registry=reg, api_key=live_key)
+        env = _EngineEnv(tmp_path, cfg=cfg, model_port=gemini_port)
+        try:
+            clause = "Candidate B RF link budget maintains 5 GHz MCS9 rate in corridor testing."
+            await env.ev_service.register_document(
+                title="Live Gemini Spec",
+                authority_class="primary_text",
+                content_text=clause,
+                api_key="test-key",
+            )
+            req = translate_generate_request(
+                model="dle-13axis-strict",
+                body={"contents": [{"role": "user", "parts": [{"text": clause}]}]},
+                tenant="t1",
+            )
+            res = await run_governed_workflow(
+                run_req=req,
+                config=env.config,
+                function_registry=env.fn_registry,
+                model_registry=reg,
+                model_port=gemini_port,
+                evidence_service=env.ev_service,
+                claim_extractor=env.extractor,
+                claim_verifier=env.verifier,
+                receipt_sealer=env.sealer,
+                ops_repo=env.ops_repo,
+                session_repo=env.sess_repo,
+                calibration=DEFAULT_PHASE2_CALIBRATION,
+                api_key=live_key,
+                registry_snapshot=env.snapshot,
+                enable_ppr=True,
+                registry_repo=env.reg_repo,
+                reference_catalog=env.ref_catalog,
+            )
+            assert {str(s["stepId"]) for s in res.steps} == set(STEP_IDS)
+            assert not list(RECEIPT_VALIDATOR.iter_errors(res.receipt))
+        finally:
+            env.close()
